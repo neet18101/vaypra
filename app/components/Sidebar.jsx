@@ -1,0 +1,121 @@
+"use client";
+
+import { motion } from "framer-motion";
+import {
+  LayoutDashboard, FileText, Package, Users,
+  Globe, GitBranch, Brain, BarChart3, Settings, Zap, LogOut,
+  Truck, Wrench,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const navItems = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { id: "invoices", label: "Invoices & Billing", icon: FileText, href: "/invoices" },
+  { id: "inventory", label: "Inventory", icon: Package, href: "/inventory" },
+  { id: "dispatches", label: "Dispatches", icon: Truck, href: "/dispatches" },
+  { id: "installations", label: "Installations", icon: Wrench, href: "/installations" },
+  { id: "customers", label: "Customers & CRM", icon: Users, href: "/customers" },
+  { id: "ecommerce", label: "Online Store", icon: Globe, href: "/ecommerce" },
+  { id: "branches", label: "Multi-Branch", icon: GitBranch, href: "/branches" },
+  { id: "ai-insights", label: "AI Insights", icon: Brain, href: "/ai-insights" },
+  { id: "reports", label: "Reports & GST", icon: BarChart3, href: "/reports" },
+  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+];
+
+export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
+  const pathname = usePathname();
+  const initials = userEmail
+    ? userEmail.substring(0, 2).toUpperCase()
+    : "AK";
+
+  return (
+    <motion.aside
+      animate={{ width: sidebarOpen ? 260 : 72 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="flex flex-col overflow-hidden flex-shrink-0 relative"
+      style={{ background: "linear-gradient(195deg, #1A1C2E 0%, #252836 100%)" }}
+    >
+      {/* Logo */}
+      <div
+        className="flex items-center gap-3 border-b border-white/[0.06]"
+        style={{ padding: sidebarOpen ? "24px 20px" : "24px 16px" }}
+      >
+        <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE]">
+          <Zap size={20} color="#fff" />
+        </div>
+        {sidebarOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+            <div className="text-lg font-extrabold text-white tracking-tight font-[var(--font-display)]">
+              BizFlow<span className="text-[#A29BFE]">Pro</span>
+            </div>
+            <div className="text-[10px] text-white/40 font-medium tracking-widest uppercase">
+              Business Suite
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link key={item.id} href={item.href} className="no-underline">
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 rounded-[10px] relative cursor-pointer transition-all duration-200"
+                style={{
+                  padding: sidebarOpen ? "11px 14px" : "11px 0",
+                  justifyContent: sidebarOpen ? "flex-start" : "center",
+                  background: isActive
+                    ? "linear-gradient(135deg, rgba(108,92,231,0.2), rgba(108,92,231,0.08))"
+                    : "transparent",
+                  color: isActive ? "#A29BFE" : "rgba(255,255,255,0.5)",
+                  fontWeight: isActive ? 600 : 400,
+                  fontSize: "13.5px",
+                }}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded bg-[#6C5CE7]"
+                  />
+                )}
+                <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} />
+                {sidebarOpen && <span>{item.label}</span>}
+              </motion.div>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User */}
+      <div
+        className="flex items-center gap-2.5 border-t border-white/[0.06]"
+        style={{ padding: sidebarOpen ? "16px 16px" : "16px 10px" }}
+      >
+        <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#00CEC9] to-[#00B894] flex items-center justify-center flex-shrink-0 text-sm font-bold text-white">
+          {initials}
+        </div>
+        {sidebarOpen && (
+          <div className="flex-1 overflow-hidden">
+            <div className="text-[13px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">
+              {userEmail || "User"}
+            </div>
+            <div className="text-[11px] text-white/35">Admin</div>
+          </div>
+        )}
+        {sidebarOpen && (
+          <form action="/auth/sign-out" method="POST">
+            <button type="submit" className="text-white/40 hover:text-white/70 transition-colors p-1 bg-transparent border-none cursor-pointer">
+              <LogOut size={16} />
+            </button>
+          </form>
+        )}
+      </div>
+    </motion.aside>
+  );
+}
