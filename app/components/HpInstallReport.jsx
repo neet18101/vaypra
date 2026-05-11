@@ -443,10 +443,12 @@ export function HpInstallPrintView({ initialValues = {}, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col overflow-hidden">
       {/* Toolbar */}
-      <div className="flex-shrink-0 bg-white border-b flex items-center gap-3 px-4 py-2.5">
-        <span className="font-semibold text-sm text-[#2D3436]">HP Installation Report</span>
-        <span className="text-xs text-gray-400 hidden sm:block">Fill in remaining details, then print</span>
-        <div className="ml-auto flex items-center gap-2">
+      <div className="flex-shrink-0 bg-white border-b flex flex-wrap items-center gap-2 px-3 py-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-semibold text-sm text-[#2D3436] whitespace-nowrap">HP Installation Report</span>
+          <span className="text-xs text-gray-400 hidden sm:block">Fill in details, then print</span>
+        </div>
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => setFillValues(initialValues)}
             className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
@@ -455,10 +457,10 @@ export function HpInstallPrintView({ initialValues = {}, onClose }) {
           </button>
           <button
             onClick={() => printHpForm(fillValues, HP_TEMPLATE)}
-            className="flex items-center gap-1.5 bg-[#0096d6] text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-[#0082bb] transition-colors"
+            className="flex items-center gap-1.5 bg-[#0096d6] text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-[#0082bb] transition-colors"
           >
             <Printer size={15} />
-            Print
+            <span className="hidden xs:inline">Print</span>
           </button>
           <button
             onClick={onClose}
@@ -469,15 +471,17 @@ export function HpInstallPrintView({ initialValues = {}, onClose }) {
         </div>
       </div>
 
-      {/* Scrollable form */}
-      <div className="flex-1 overflow-auto bg-gray-100 p-4">
-        <div>
+      {/* Scrollable form — horizontal scroll on small screens */}
+      <div className="flex-1 overflow-auto bg-gray-100 p-2 sm:p-4">
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: 760 }}>
           <HpInstallReport
             template={HP_TEMPLATE}
             mode="fill"
             fillValues={fillValues}
             onFill={handleFill}
           />
+          </div>
         </div>
       </div>
     </div>

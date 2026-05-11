@@ -21,6 +21,38 @@ export default function InstallationsContent({ installations, products, branches
   const [printMenuId, setPrintMenuId] = useState(null);
   const [hpPrintValues, setHpPrintValues] = useState(null);
 
+  const handlePrintClick = (installation) => {
+    const isPC = installation.products?.category?.toLowerCase() === "pc";
+    if (isPC) {
+      const cf = installation.custom_fields || {};
+      setHpPrintValues({
+        customer_name: installation.customer_name || "",
+        mc_serial: installation.products?.serial_number || "",
+        model_no: installation.products?.name || "",
+        device_brand: installation.products?.brand || "",
+        install_date: installation.installation_date?.split("T")[0] || "",
+        win_key: installation.windows_key || "",
+        office_key: installation.ms_office_key || "",
+        av_key: installation.antivirus_key || "",
+        eng_name: installation.installer_name || "",
+        eng_code: cf.eng_code || "",
+        address: cf.address || "",
+        state: cf.state || "",
+        pin: cf.pin || "",
+        tel_no: cf.tel_no || "",
+        email: cf.email || "",
+        contact_person: cf.contact_person || "",
+        proc_ram_ssd: cf.proc_ram_ssd || "",
+        win_version: cf.win_version || "",
+        office_version: cf.office_version || "",
+        av_name: cf.av_name || "",
+        av_validity: cf.av_validity || "",
+      });
+    } else {
+      setPrintMenuId(installation.id);
+    }
+  };
+
   const totalInstallations = installations.length;
 
   const thisMonthCount = installations.filter((inst) => {
@@ -134,7 +166,108 @@ export default function InstallationsContent({ installations, products, branches
           </p>
         </Card>
       ) : (
-        <Card>
+        <>
+          {/* ── Mobile cards ── */}
+          <div className="md:hidden space-y-3">
+            {filteredInstallations.map((installation) => {
+              const isExpanded = expandedRow === installation.id;
+              const branchName = branches.find((b) => b.id === installation.branch_id)?.name || "Unknown";
+              const cf = installation.custom_fields || {};
+              const cfKeys = Object.keys(cf);
+              return (
+                <motion.div
+                  key={installation.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <div className="font-semibold text-[#2D3436] text-sm">{installation.products?.name || "Unknown"}</div>
+                        <div className="font-mono text-xs text-[#6C5CE7] mt-0.5">{installation.products?.serial_number || "—"}</div>
+                      </div>
+                      <StatusBadge status={installation.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
+                      <div>
+                        <div className="text-gray-400 mb-0.5">Customer</div>
+                        <div className="text-gray-700 font-medium">{installation.customer_name}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 mb-0.5">Installer</div>
+                        <div className="text-gray-700 font-medium">{installation.installer_name}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 mb-0.5">Date</div>
+                        <div className="text-gray-700">{formatDate(installation.installation_date)}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 mb-0.5">Branch</div>
+                        <div className="text-gray-700">{branchName}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded keys */}
+                  {isExpanded && (
+                    <div className="bg-[#F8F9FE] px-4 py-3 border-t border-gray-100 space-y-2">
+                      {installation.windows_key && (
+                        <div className="flex items-center gap-2 text-[12px]">
+                          <Key size={11} className="text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-500">Windows:</span>
+                          <span className="font-mono text-[#2D3436] break-all">{installation.windows_key}</span>
+                        </div>
+                      )}
+                      {installation.ms_office_key && (
+                        <div className="flex items-center gap-2 text-[12px]">
+                          <Key size={11} className="text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-500">Office:</span>
+                          <span className="font-mono text-[#2D3436] break-all">{installation.ms_office_key}</span>
+                        </div>
+                      )}
+                      {installation.antivirus_key && (
+                        <div className="flex items-center gap-2 text-[12px]">
+                          <Key size={11} className="text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-500">Antivirus:</span>
+                          <span className="font-mono text-[#2D3436] break-all">{installation.antivirus_key}</span>
+                        </div>
+                      )}
+                      {cfKeys.filter(k => !["address","state","pin","tel_no","email","contact_person","proc_ram_ssd","win_version","office_version","av_name","av_validity","eng_code"].includes(k)).map((k) => (
+                        <div key={k} className="flex items-center gap-2 text-[12px]">
+                          <Key size={11} className="text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-500">{k}:</span>
+                          <span className="font-mono text-[#2D3436]">{cf[k]}</span>
+                        </div>
+                      ))}
+                      {installation.notes && (
+                        <p className="text-[12px] text-gray-600 pt-1 border-t border-gray-200">{installation.notes}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 px-4 py-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handlePrintClick(installation)}
+                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                    >
+                      <Printer size={14} /> Print
+                    </button>
+                    <button
+                      onClick={() => setExpandedRow(isExpanded ? null : installation.id)}
+                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {isExpanded ? "Less" : "Keys"}
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* ── Desktop table ── */}
+        <Card className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -214,40 +347,7 @@ export default function InstallationsContent({ installations, products, branches
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => {
-                                const isPC = installation.products?.category?.toLowerCase() === "pc";
-                                if (isPC) {
-                                  const cf = installation.custom_fields || {};
-                                  const isoDate = installation.installation_date
-                                    ? installation.installation_date.split("T")[0]
-                                    : "";
-                                  setHpPrintValues({
-                                    customer_name: installation.customer_name || "",
-                                    mc_serial: installation.products?.serial_number || "",
-                                    model_no: installation.products?.name || "",
-                                    device_brand: installation.products?.brand || "",
-                                    install_date: isoDate,
-                                    win_key: installation.windows_key || "",
-                                    office_key: installation.ms_office_key || "",
-                                    av_key: installation.antivirus_key || "",
-                                    eng_name: installation.installer_name || "",
-                                    eng_code: cf.eng_code || "",
-                                    address: cf.address || "",
-                                    state: cf.state || "",
-                                    pin: cf.pin || "",
-                                    tel_no: cf.tel_no || "",
-                                    email: cf.email || "",
-                                    contact_person: cf.contact_person || "",
-                                    proc_ram_ssd: cf.proc_ram_ssd || "",
-                                    win_version: cf.win_version || "",
-                                    office_version: cf.office_version || "",
-                                    av_name: cf.av_name || "",
-                                    av_validity: cf.av_validity || "",
-                                  });
-                                } else {
-                                  setPrintMenuId(installation.id);
-                                }
-                              }}
+                              onClick={() => handlePrintClick(installation)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
                               title="Print report"
                             >
@@ -343,6 +443,7 @@ export default function InstallationsContent({ installations, products, branches
             </table>
           </div>
         </Card>
+        </>
       )}
 
       {/* Print Template Picker Overlay */}

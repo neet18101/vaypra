@@ -23,29 +23,33 @@ const navItems = [
   { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
 ];
 
-export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
+export default function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, userEmail }) {
   const pathname = usePathname();
-  const initials = userEmail
-    ? userEmail.substring(0, 2).toUpperCase()
-    : "AK";
+  const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "AK";
+  const showLabels = isMobile ? true : sidebarOpen;
 
   return (
     <motion.aside
-      animate={{ width: sidebarOpen ? 260 : 72 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="flex flex-col overflow-hidden flex-shrink-0 relative"
+      animate={{
+        width: isMobile ? 260 : (sidebarOpen ? 260 : 72),
+        x: isMobile ? (sidebarOpen ? 0 : -270) : 0,
+      }}
+      transition={{ duration: 0.28, ease: "easeInOut" }}
+      className={`flex flex-col overflow-hidden flex-shrink-0 ${
+        isMobile ? "fixed top-0 left-0 h-full z-50" : "relative"
+      }`}
       style={{ background: "linear-gradient(195deg, #1A1C2E 0%, #252836 100%)" }}
     >
       {/* Logo */}
       <div
         className="flex items-center gap-3 border-b border-white/[0.06]"
-        style={{ padding: sidebarOpen ? "24px 20px" : "24px 16px" }}
+        style={{ padding: showLabels ? "24px 20px" : "24px 16px" }}
       >
         <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE]">
           <Zap size={20} color="#fff" />
         </div>
-        {sidebarOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+        {showLabels && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }}>
             <div className="text-lg font-extrabold text-white tracking-tight font-[var(--font-display)]">
               BizFlow<span className="text-[#A29BFE]">Pro</span>
             </div>
@@ -62,14 +66,19 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <Link key={item.id} href={item.href} className="no-underline">
+            <Link
+              key={item.id}
+              href={item.href}
+              className="no-underline"
+              onClick={() => isMobile && setSidebarOpen(false)}
+            >
               <motion.div
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 className="flex items-center gap-3 rounded-[10px] relative cursor-pointer transition-all duration-200"
                 style={{
-                  padding: sidebarOpen ? "11px 14px" : "11px 0",
-                  justifyContent: sidebarOpen ? "flex-start" : "center",
+                  padding: showLabels ? "11px 14px" : "11px 0",
+                  justifyContent: showLabels ? "flex-start" : "center",
                   background: isActive
                     ? "linear-gradient(135deg, rgba(108,92,231,0.2), rgba(108,92,231,0.08))"
                     : "transparent",
@@ -85,7 +94,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
                   />
                 )}
                 <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} />
-                {sidebarOpen && <span>{item.label}</span>}
+                {showLabels && <span>{item.label}</span>}
               </motion.div>
             </Link>
           );
@@ -95,12 +104,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
       {/* User */}
       <div
         className="flex items-center gap-2.5 border-t border-white/[0.06]"
-        style={{ padding: sidebarOpen ? "16px 16px" : "16px 10px" }}
+        style={{ padding: showLabels ? "16px 16px" : "16px 10px" }}
       >
         <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#00CEC9] to-[#00B894] flex items-center justify-center flex-shrink-0 text-sm font-bold text-white">
           {initials}
         </div>
-        {sidebarOpen && (
+        {showLabels && (
           <div className="flex-1 overflow-hidden">
             <div className="text-[13px] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis">
               {userEmail || "User"}
@@ -108,7 +117,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, userEmail }) {
             <div className="text-[11px] text-white/35">Admin</div>
           </div>
         )}
-        {sidebarOpen && (
+        {showLabels && (
           <form action="/auth/sign-out" method="POST">
             <button type="submit" className="text-white/40 hover:text-white/70 transition-colors p-1 bg-transparent border-none cursor-pointer">
               <LogOut size={16} />

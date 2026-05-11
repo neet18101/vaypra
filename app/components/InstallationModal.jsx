@@ -706,7 +706,7 @@ export default function InstallationModal({ show, onClose, products, branches })
                   <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Customer address" className={inputClass} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={labelClass}>State</label>
                     <input type="text" value={custState} onChange={(e) => setCustState(e.target.value)} placeholder="State" className={inputClass} />
@@ -717,7 +717,7 @@ export default function InstallationModal({ show, onClose, products, branches })
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={labelClass}>Tel No</label>
                     <input type="tel" value={telNo} onChange={(e) => setTelNo(e.target.value)} placeholder="Phone number" className={inputClass} />
@@ -738,7 +738,7 @@ export default function InstallationModal({ show, onClose, products, branches })
                   <input type="text" value={procRamSsd} onChange={(e) => setProcRamSsd(e.target.value)} placeholder="e.g. i5 / 8GB / 512GB" className={inputClass} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={labelClass}>Windows Version</label>
                     <input type="text" value={winVersion} onChange={(e) => setWinVersion(e.target.value)} placeholder="e.g. Windows 11 Pro" className={inputClass} />
@@ -749,7 +749,7 @@ export default function InstallationModal({ show, onClose, products, branches })
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={labelClass}>Antivirus Name</label>
                     <input type="text" value={avName} onChange={(e) => setAvName(e.target.value)} placeholder="e.g. Quick Heal" className={inputClass} />
