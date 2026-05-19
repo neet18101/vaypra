@@ -63,7 +63,9 @@ export default function ProductSelector({ products, selectedIds, onToggle, onTog
                 <input
                   type="checkbox"
                   checked={allFilteredSelected}
-                  onChange={onToggleAll}
+                  onChange={() =>
+                    onToggleAll?.(filteredProducts.map((p) => p.id), !allFilteredSelected)
+                  }
                   className="w-4 h-4 rounded border-[#E2E4F0] text-[#6C5CE7] accent-[#6C5CE7] cursor-pointer"
                 />
               </th>

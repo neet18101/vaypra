@@ -20,8 +20,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "BizFlow Pro - Business Suite",
-  description: "Complete business management solution",
+  title: "Rangayan Creations",
+  description: "Installation & Business Management",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Rangayan",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -30,6 +36,14 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${dmSans.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="theme-color" content="#6C5CE7" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Rangayan" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body)" }}>
         {children}
       </body>

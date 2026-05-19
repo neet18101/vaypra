@@ -4,30 +4,88 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, FileText, Package, Users,
   Globe, GitBranch, Brain, BarChart3, Settings, Zap, LogOut,
-  Truck, Wrench,
+  Truck, Wrench, UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { id: "invoices", label: "Invoices & Billing", icon: FileText, href: "/invoices" },
-  { id: "inventory", label: "Inventory", icon: Package, href: "/inventory" },
-  { id: "dispatches", label: "Dispatches", icon: Truck, href: "/dispatches" },
-  { id: "installations", label: "Installations", icon: Wrench, href: "/installations" },
-  { id: "customers", label: "Customers & CRM", icon: Users, href: "/customers" },
-  { id: "ecommerce", label: "Online Store", icon: Globe, href: "/ecommerce" },
-  { id: "branches", label: "Multi-Branch", icon: GitBranch, href: "/branches" },
-  { id: "ai-insights", label: "AI Insights", icon: Brain, href: "/ai-insights" },
-  { id: "reports", label: "Reports & GST", icon: BarChart3, href: "/reports" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+const adminNav = [
+  { id: "dashboard",      label: "Dashboard",       icon: LayoutDashboard, href: "/dashboard" },
+  { id: "invoices",       label: "Invoices & Billing", icon: FileText,      href: "/invoices" },
+  { id: "inventory",      label: "Inventory",        icon: Package,         href: "/inventory" },
+  { id: "dispatches",     label: "Dispatches",       icon: Truck,           href: "/dispatches" },
+  { id: "installations",  label: "Installations",    icon: Wrench,          href: "/installations" },
+  { id: "customers",      label: "Customers & CRM",  icon: Users,           href: "/customers" },
+  { id: "ecommerce",      label: "Online Store",     icon: Globe,           href: "/ecommerce" },
+  { id: "branches",       label: "Multi-Branch",     icon: GitBranch,       href: "/branches" },
+  { id: "ai-insights",    label: "AI Insights",      icon: Brain,           href: "/ai-insights" },
+  { id: "reports",        label: "Reports & GST",    icon: BarChart3,       href: "/reports" },
+  { id: "team",           label: "Team",             icon: UserCog,         href: "/team" },
+  { id: "settings",       label: "Settings",         icon: Settings,        href: "/settings" },
 ];
 
-export default function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, userEmail }) {
+const installerNav = [
+  { id: "installations", label: "Installations", icon: Wrench, href: "/installations" },
+];
+
+export default function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, userEmail, userRole }) {
   const pathname = usePathname();
-  const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "AK";
+  const isInstaller = userRole === "installer";
+  const navItems = isInstaller ? installerNav : adminNav;
+  const initials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "RC";
   const showLabels = isMobile ? true : sidebarOpen;
 
+  // Installer: minimal fixed sidebar
+  if (isInstaller) {
+    return (
+      <aside
+        className="flex flex-col flex-shrink-0"
+        style={{ width: 64, background: "linear-gradient(195deg, #1A1C2E 0%, #252836 100%)" }}
+      >
+        {/* Logo icon */}
+        <div className="flex items-center justify-center py-5 border-b border-white/[0.06]">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE]">
+            <Zap size={18} color="#fff" />
+          </div>
+        </div>
+
+        {/* Single nav item */}
+        <nav className="flex-1 flex flex-col items-center pt-3 gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link key={item.id} href={item.href} title={item.label}>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+                  style={{
+                    background: isActive ? "rgba(108,92,231,0.25)" : "transparent",
+                    color: isActive ? "#A29BFE" : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* User + logout */}
+        <div className="flex flex-col items-center gap-2 py-4 border-t border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00CEC9] to-[#00B894] flex items-center justify-center text-xs font-bold text-white">
+            {initials}
+          </div>
+          <form action="/auth/sign-out" method="POST">
+            <button type="submit" className="text-white/40 hover:text-white/70 transition-colors bg-transparent border-none cursor-pointer p-1">
+              <LogOut size={15} />
+            </button>
+          </form>
+        </div>
+      </aside>
+    );
+  }
+
+  // Admin: full collapsible sidebar
   return (
     <motion.aside
       animate={{

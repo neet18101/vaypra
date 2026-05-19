@@ -173,7 +173,19 @@ export default function DispatchModal({
               <ProductSelector
                 products={products}
                 selectedIds={selectedIds}
-                onChange={setSelectedIds}
+                onToggle={(id) =>
+                  setSelectedIds((prev) =>
+                    prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+                  )
+                }
+                onToggleAll={(ids, selectAll) => {
+                  const idSet = new Set(ids);
+                  setSelectedIds((prev) =>
+                    selectAll
+                      ? [...new Set([...prev, ...ids])]
+                      : prev.filter((i) => !idSet.has(i))
+                  );
+                }}
               />
             </div>
           ) : (

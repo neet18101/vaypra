@@ -4,50 +4,41 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X, Printer,
+  Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X, Printer, Eye, Trash2,
 } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
 import InstallationModal, { printInstallation } from "@/app/components/InstallationModal";
 import { TEMPLATES, getBrandTheme } from "@/app/components/PrintTemplates";
-import { HpInstallPrintView } from "@/app/components/HpInstallReport";
 import { createClient } from "@/utils/supabase/client";
 
 export default function InstallationsContent({ installations, products, branches }) {
   const router = useRouter();
+  const supabase = createClient();
   const [showModal, setShowModal] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [printMenuId, setPrintMenuId] = useState(null);
-  const [hpPrintValues, setHpPrintValues] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDelete = async (installation) => {
+    if (!confirm(`Delete installation for "${installation.products?.name || "this product"}"? This cannot be undone.`)) return;
+    setDeletingId(installation.id);
+    try {
+      await supabase.from("installations").delete().eq("id", installation.id);
+      await supabase.from("products").update({ status: "delivered" }).eq("id", installation.product_id);
+      router.refresh();
+    } catch (err) {
+      alert("Delete failed: " + err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handlePrintClick = (installation) => {
     const isPC = installation.products?.category?.toLowerCase() === "pc";
     if (isPC) {
-      const cf = installation.custom_fields || {};
-      setHpPrintValues({
-        customer_name: installation.customer_name || "",
-        mc_serial: installation.products?.serial_number || "",
-        model_no: installation.products?.name || "",
-        device_brand: installation.products?.brand || "",
-        install_date: installation.installation_date?.split("T")[0] || "",
-        win_key: installation.windows_key || "",
-        office_key: installation.ms_office_key || "",
-        av_key: installation.antivirus_key || "",
-        eng_name: installation.installer_name || "",
-        eng_code: cf.eng_code || "",
-        address: cf.address || "",
-        state: cf.state || "",
-        pin: cf.pin || "",
-        tel_no: cf.tel_no || "",
-        email: cf.email || "",
-        contact_person: cf.contact_person || "",
-        proc_ram_ssd: cf.proc_ram_ssd || "",
-        win_version: cf.win_version || "",
-        office_version: cf.office_version || "",
-        av_name: cf.av_name || "",
-        av_validity: cf.av_validity || "",
-      });
+      router.push(`/installations/${installation.id}`);
     } else {
       setPrintMenuId(installation.id);
     }
@@ -248,6 +239,12 @@ export default function InstallationsContent({ installations, products, branches
 
                   <div className="flex items-center justify-end gap-2 px-4 py-2 border-t border-gray-100">
                     <button
+                      onClick={() => router.push(`/installations/${installation.id}`)}
+                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                    >
+                      <Eye size={14} /> View
+                    </button>
+                    <button
                       onClick={() => handlePrintClick(installation)}
                       className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
                     >
@@ -259,6 +256,13 @@ export default function InstallationsContent({ installations, products, branches
                     >
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       {isExpanded ? "Less" : "Keys"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(installation)}
+                      disabled={deletingId === installation.id}
+                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40"
+                    >
+                      <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </motion.div>
@@ -347,6 +351,13 @@ export default function InstallationsContent({ installations, products, branches
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1">
                             <button
+                              onClick={() => router.push(`/installations/${installation.id}`)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
+                              title="View report"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
                               onClick={() => handlePrintClick(installation)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
                               title="Print report"
@@ -359,6 +370,14 @@ export default function InstallationsContent({ installations, products, branches
                               title="View license keys"
                             >
                               {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(installation)}
+                              disabled={deletingId === installation.id}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                              title="Delete installation"
+                            >
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>
@@ -536,14 +555,6 @@ export default function InstallationsContent({ installations, products, branches
           );
         })()}
       </AnimatePresence>
-
-      {/* HP Installation Report (PC category) */}
-      {hpPrintValues && (
-        <HpInstallPrintView
-          initialValues={hpPrintValues}
-          onClose={() => setHpPrintValues(null)}
-        />
-      )}
 
       {/* Installation Modal */}
       {showModal && (

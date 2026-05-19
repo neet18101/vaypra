@@ -5,7 +5,7 @@ import { X, Printer } from "lucide-react"
 
 // ─── Inner report (pure render) ────────────────────────────────────────────
 
-function HpInstallReport({ template, mode, fillValues, onFill }) {
+export function HpInstallReport({ template, mode, fillValues, onFill }) {
   const v = (id) => (typeof fillValues[id] === "string" ? fillValues[id] : "")
   const r = (id, choice) => fillValues[id] === choice
 
@@ -17,40 +17,72 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
   const yesnoTd = { ...cellTd, textAlign: "right", whiteSpace: "nowrap", width: 100 }
   const inp = { width: "100%", border: "none", outline: "none", font: "inherit", background: "transparent", padding: "1px 0" }
 
-  const textField = (id, opts = {}) =>
-    mode === "fill" ? (
-      <input
-        type={opts.type ?? "text"}
-        value={v(id)}
-        onChange={(e) => onFill(id, e.target.value)}
-        placeholder={opts.placeholder}
-        style={inp}
-      />
-    ) : (
-      <span style={{ display: "inline-block", borderBottom: "1px solid #aaa", width: "100%", minHeight: 16 }} />
+  const textField = (id, opts = {}) => {
+    if (mode === "fill") {
+      return (
+        <input
+          type={opts.type ?? "text"}
+          value={v(id)}
+          onChange={(e) => onFill(id, e.target.value)}
+          placeholder={opts.placeholder}
+          style={inp}
+        />
+      )
+    }
+    if (mode === "view") {
+      const val = v(id)
+      return (
+        <span style={{ display: "inline-block", width: "100%", minHeight: 16, color: val ? "#222" : "#aaa" }}>
+          {val || "—"}
+        </span>
+      )
+    }
+    return <span style={{ display: "inline-block", borderBottom: "1px solid #aaa", width: "100%", minHeight: 16 }} />
+  }
+
+  const yesNo = (id) => {
+    if (mode === "view") {
+      const val = fillValues[id]
+      return (
+        <span style={{ float: "right", whiteSpace: "nowrap" }}>
+          <span style={{ marginLeft: 8 }}>{val === "yes" ? "●" : "○"}&thinsp;Yes</span>
+          <span style={{ marginLeft: 8 }}>{val === "no" ? "●" : "○"}&thinsp;No</span>
+        </span>
+      )
+    }
+    return (
+      <>
+        <label style={{ marginLeft: 8 }}>
+          <input type="radio" name={id} checked={mode === "fill" && r(id, "yes")} onChange={() => onFill(id, "yes")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Yes
+        </label>
+        <label style={{ marginLeft: 8 }}>
+          <input type="radio" name={id} checked={mode === "fill" && r(id, "no")} onChange={() => onFill(id, "no")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />No
+        </label>
+      </>
     )
+  }
 
-  const yesNo = (id) => (
-    <>
-      <label style={{ marginLeft: 8 }}>
-        <input type="radio" name={id} checked={mode === "fill" && r(id, "yes")} onChange={() => onFill(id, "yes")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Yes
-      </label>
-      <label style={{ marginLeft: 8 }}>
-        <input type="radio" name={id} checked={mode === "fill" && r(id, "no")} onChange={() => onFill(id, "no")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />No
-      </label>
-    </>
-  )
-
-  const actStatus = (id) => (
-    <>
-      <label style={{ marginRight: 14 }}>
-        <input type="radio" name={id} checked={mode === "fill" && r(id, "Activated")} onChange={() => onFill(id, "Activated")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Activated
-      </label>
-      <label>
-        <input type="radio" name={id} checked={mode === "fill" && r(id, "Pending")} onChange={() => onFill(id, "Pending")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Pending
-      </label>
-    </>
-  )
+  const actStatus = (id) => {
+    if (mode === "view") {
+      const val = fillValues[id]
+      return (
+        <span style={{ whiteSpace: "nowrap" }}>
+          <span style={{ marginRight: 14 }}>{val === "Activated" ? "●" : "○"}&thinsp;Activated</span>
+          <span>{val === "Pending" ? "●" : "○"}&thinsp;Pending</span>
+        </span>
+      )
+    }
+    return (
+      <>
+        <label style={{ marginRight: 14 }}>
+          <input type="radio" name={id} checked={mode === "fill" && r(id, "Activated")} onChange={() => onFill(id, "Activated")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Activated
+        </label>
+        <label>
+          <input type="radio" name={id} checked={mode === "fill" && r(id, "Pending")} onChange={() => onFill(id, "Pending")} disabled={mode !== "fill"} style={{ marginRight: 3 }} />Pending
+        </label>
+      </>
+    )
+  }
 
   const checklist = [
     { id: "c1", label: "Hardware unboxing & physical setup" },
@@ -61,16 +93,6 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
     { id: "c6", label: "All drivers installed (LAN/WiFi/Audio/Display)" },
     { id: "c7", label: "Windows Updates installed" },
   ]
-  const training = [
-    { id: "t1", label: "Power On / Off procedure" },
-    { id: "t2", label: "Login & password management" },
-    { id: "t3", label: "File / Folder management" },
-    { id: "t4", label: "MS Office basic usage" },
-    { id: "t5", label: "Antivirus scanning & updates" },
-    { id: "t6", label: "Internet & email usage" },
-    { id: "t7", label: "Backup & data safety practices" },
-  ]
-  const maxRows = Math.max(checklist.length, training.length)
 
   const installDateVal = v("install_date")
   const warrantyExpiry = (() => {
@@ -108,7 +130,7 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td style={valueTd}>{textField("device_brand", { placeholder: "e.g. HP / Dell / Lenovo" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Customer Name:</td><td style={valueTd}>{textField("customer_name")}</td>
+            <td style={labelTd}>User Name:</td><td style={valueTd}>{textField("customer_name")}</td>
             <td style={labelTd}>Model No:</td><td style={valueTd}>{textField("model_no", { placeholder: "e.g. HP 24-cb1xxx" })}</td>
           </tr>
           <tr>
@@ -137,11 +159,11 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td style={labelTd}>Room No:</td><td style={cellTd}>{textField("room_no")}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Contact Person:</td><td colSpan={3} style={cellTd}>{textField("contact_person")}</td>
+            <td style={labelTd}>Name of User:</td><td colSpan={3} style={cellTd}>{textField("contact_person")}</td>
           </tr>
           <tr>
             <td style={labelTd}>Processor / RAM / SSD:</td>
-            <td colSpan={3} style={cellTd}>{textField("proc_ram_ssd", { placeholder: "e.g. i5 / 8GB / 512GB" })}</td>
+            <td colSpan={3} style={cellTd}>{textField("proc_ram_ssd", { placeholder: "i5/8GB/512GB" })}</td>
           </tr>
 
           {/* License Keys */}
@@ -151,7 +173,7 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("win_key", { placeholder: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Windows Version:</td><td style={cellTd}>{textField("win_version", { placeholder: "e.g. Windows 11 Pro" })}</td>
+            <td style={labelTd}>Windows Version:</td><td style={cellTd}><strong>Windows 11</strong></td>
             <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("win_activation")}</td>
           </tr>
           <tr>
@@ -159,7 +181,7 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("office_key", { placeholder: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>MS Office Version:</td><td style={cellTd}>{textField("office_version", { placeholder: "e.g. Office 2021 Home & Student" })}</td>
+            <td style={labelTd}>MS Office Version:</td><td style={cellTd}><strong>MS Office</strong></td>
             <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("office_activation")}</td>
           </tr>
           <tr>
@@ -167,29 +189,22 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("av_key", { placeholder: "Enter antivirus product key" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Antivirus Name:</td><td style={cellTd}>{textField("av_name", { placeholder: "e.g. Quick Heal / McAfee / Norton" })}</td>
-            <td style={labelTd}>Validity:</td><td style={cellTd}>{textField("av_validity", { placeholder: "e.g. 1 Year - till 14/07/2027" })}</td>
+            <td style={labelTd}>Antivirus Name:</td><td style={cellTd}><strong>Quick Heal</strong></td>
+            <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("av_activation")}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Serial No Key:</td>
-            <td colSpan={3} style={cellTd}>{textField("hw_serial_key", { placeholder: "Device / Hardware serial key" })}</td>
+            <td style={labelTd}>Validity:</td><td colSpan={3} style={cellTd}><strong>3 Years</strong></td>
           </tr>
-
-          {/* Checklist + Training */}
+          {/* Checklist only */}
           <tr>
-            <td colSpan={2} style={sectionTd}>INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td>
-            <td colSpan={2} style={sectionTd}>CUSTOMER TRAINING (OPERATION)&nbsp;&nbsp;(Yes / No)</td>
+            <td colSpan={4} style={sectionTd}>INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td>
           </tr>
-          {Array.from({ length: maxRows }).map((_, i) => {
-            const c = checklist[i]
-            const t = training[i]
-            return (
-              <tr key={i}>
-                {c ? <><td style={cellTd}>{c.label}</td><td style={yesnoTd}>{yesNo(c.id)}</td></> : <><td style={cellTd}></td><td style={yesnoTd}></td></>}
-                {t ? <><td style={cellTd}>{t.label}</td><td style={yesnoTd}>{yesNo(t.id)}</td></> : <><td style={cellTd}></td><td style={yesnoTd}></td></>}
-              </tr>
-            )
-          })}
+          {checklist.map((c) => (
+            <tr key={c.id}>
+              <td style={cellTd}>{c.label}</td>
+              <td colSpan={3} style={yesnoTd}>{yesNo(c.id)}</td>
+            </tr>
+          ))}
 
           {/* Remarks */}
           <tr><td colSpan={4} style={sectionTd}>REMARKS</td></tr>
@@ -205,7 +220,7 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
 
           <tr>
             <td style={labelTd}>Service Date:</td><td style={cellTd}>{textField("service_date", { type: "date" })}</td>
-            <td style={labelTd}>Customer Name:</td><td style={cellTd}>{textField("cust_signing")}</td>
+            <td style={labelTd}>User Name:</td><td style={cellTd}>{textField("cust_signing")}</td>
           </tr>
         </tbody>
       </table>
@@ -221,7 +236,7 @@ function HpInstallReport({ template, mode, fillValues, onFill }) {
 
 // ─── Print: generate static HTML from fillValues ──────────────────────────
 
-function buildHpPrintHtml(fillValues, template) {
+export function buildHpPrintHtml(fillValues, template) {
   const v = (id) => String(fillValues[id] || "")
   const sel = (id, choice) => fillValues[id] === choice
 
@@ -244,9 +259,7 @@ function buildHpPrintHtml(fillValues, template) {
   // Render a text value or blank underline
   const tf = (id, isDate = false) => {
     const val = isDate ? fmtDate(v(id)) : v(id)
-    return val
-      ? `<span>${val}</span>`
-      : `<span style="display:inline-block;border-bottom:1px solid #aaa;width:100%;min-height:14px"></span>`
+    return val ? `<span>${val}</span>` : ``
   }
 
   // Yes / No radio display
@@ -283,24 +296,10 @@ function buildHpPrintHtml(fillValues, template) {
     { id: "c6", label: "All drivers installed (LAN/WiFi/Audio/Display)" },
     { id: "c7", label: "Windows Updates installed" },
   ]
-  const training = [
-    { id: "t1", label: "Power On / Off procedure" },
-    { id: "t2", label: "Login & password management" },
-    { id: "t3", label: "File / Folder management" },
-    { id: "t4", label: "MS Office basic usage" },
-    { id: "t5", label: "Antivirus scanning & updates" },
-    { id: "t6", label: "Internet & email usage" },
-    { id: "t7", label: "Backup & data safety practices" },
-  ]
-  const maxRows = Math.max(checklist.length, training.length)
 
-  const checkRows = Array.from({ length: maxRows }).map((_, i) => {
-    const c = checklist[i], t = training[i]
-    return `<tr>
-      ${c ? `<td style="${C}">${c.label}</td><td style="${YN}">${yn(c.id)}</td>` : `<td style="${C}"></td><td style="${YN}"></td>`}
-      ${t ? `<td style="${C}">${t.label}</td><td style="${YN}">${yn(t.id)}</td>` : `<td style="${C}"></td><td style="${YN}"></td>`}
-    </tr>`
-  }).join("")
+  const checkRows = checklist.map((c) =>
+    `<tr><td style="${C}">${c.label}</td><td colspan="3" style="${YN}">${yn(c.id)}</td></tr>`
+  ).join("")
 
   return `<!DOCTYPE html><html><head>
     <meta charset="UTF-8"><title> </title>
@@ -330,7 +329,7 @@ function buildHpPrintHtml(fillValues, template) {
           <td style="${L}">Brand Name:</td><td style="${V}">${tf("device_brand")}</td>
         </tr>
         <tr>
-          <td style="${L}">Customer Name:</td><td style="${V}">${tf("customer_name")}</td>
+          <td style="${L}">User Name:</td><td style="${V}">${tf("customer_name")}</td>
           <td style="${L}">Model No:</td><td style="${V}">${tf("model_no")}</td>
         </tr>
         <tr>
@@ -355,7 +354,7 @@ function buildHpPrintHtml(fillValues, template) {
           <td style="${L}">Room No:</td><td style="${C}">${tf("room_no")}</td>
         </tr>
         <tr>
-          <td style="${L}">Contact Person:</td><td colspan="3" style="${C}">${tf("contact_person")}</td>
+          <td style="${L}">Name of User:</td><td colspan="3" style="${C}">${tf("contact_person")}</td>
         </tr>
         <tr>
           <td style="${L}">Processor / RAM / SSD:</td>
@@ -367,7 +366,7 @@ function buildHpPrintHtml(fillValues, template) {
           <td colspan="3" style="${C}">${tf("win_key")}</td>
         </tr>
         <tr>
-          <td style="${L}">Windows Version:</td><td style="${C}">${tf("win_version")}</td>
+          <td style="${L}">Windows Version:</td><td style="${C}"><strong>Windows 11</strong></td>
           <td style="${L}">Activation Status:</td><td style="${C}">${act("win_activation")}</td>
         </tr>
         <tr>
@@ -375,7 +374,7 @@ function buildHpPrintHtml(fillValues, template) {
           <td colspan="3" style="${C}">${tf("office_key")}</td>
         </tr>
         <tr>
-          <td style="${L}">MS Office Version:</td><td style="${C}">${tf("office_version")}</td>
+          <td style="${L}">MS Office Version:</td><td style="${C}"><strong>MS Office</strong></td>
           <td style="${L}">Activation Status:</td><td style="${C}">${act("office_activation")}</td>
         </tr>
         <tr>
@@ -383,23 +382,19 @@ function buildHpPrintHtml(fillValues, template) {
           <td colspan="3" style="${C}">${tf("av_key")}</td>
         </tr>
         <tr>
-          <td style="${L}">Antivirus Name:</td><td style="${C}">${tf("av_name")}</td>
-          <td style="${L}">Validity:</td><td style="${C}">${tf("av_validity")}</td>
+          <td style="${L}">Antivirus Name:</td><td style="${C}"><strong>Quick Heal</strong></td>
+          <td style="${L}">Activation Status:</td><td style="${C}">${act("av_activation")}</td>
         </tr>
         <tr>
-          <td style="${L}">Serial No Key:</td>
-          <td colspan="3" style="${C}">${tf("hw_serial_key")}</td>
+          <td style="${L}">Validity:</td><td colspan="3" style="${C}"><strong>3 Years</strong></td>
         </tr>
-        <tr>
-          <td colspan="2" style="${S}">INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td>
-          <td colspan="2" style="${S}">CUSTOMER TRAINING (OPERATION)&nbsp;&nbsp;(Yes / No)</td>
-        </tr>
+        <tr><td colspan="4" style="${S}">INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td></tr>
         ${checkRows}
         <tr><td colspan="4" style="${S}">REMARKS</td></tr>
         <tr><td colspan="4" style="${C};height:32px">${tf("remarks")}</td></tr>
         <tr>
           <td style="${L}">Service Date:</td><td style="${C}">${tf("service_date", true)}</td>
-          <td style="${L}">Customer Name:</td><td style="${C}">${tf("cust_signing")}</td>
+          <td style="${L}">User Name:</td><td style="${C}">${tf("cust_signing")}</td>
         </tr>
       </tbody></table>
       <div style="display:flex;justify-content:space-between;padding:30px 14px 8px;font-size:11px">
@@ -410,7 +405,7 @@ function buildHpPrintHtml(fillValues, template) {
   </body></html>`
 }
 
-function printHpForm(fillValues, template) {
+export function printHpForm(fillValues, template) {
   const html = buildHpPrintHtml(fillValues, template)
   const win = window.open("", "_blank")
   if (!win) return
@@ -422,7 +417,7 @@ function printHpForm(fillValues, template) {
 
 // ─── Template config ───────────────────────────────────────────────────────
 
-const HP_TEMPLATE = {
+export const HP_TEMPLATE = {
   brand_name: "Rangayan Creations Pvt. Ltd",
   tagline: "",
   primary_color: "#0096d6",
