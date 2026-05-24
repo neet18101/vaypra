@@ -556,6 +556,12 @@ BEGIN
 END;
 $$;
 
+4roti  
+veg b
+mashroom 
+daal 
+aollu
+
 -- Recreate the trigger (drop + create to replace any prior version)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

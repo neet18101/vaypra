@@ -4,20 +4,21 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate,
+  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import {
   TEMPLATES, getBrandTheme, normalizeData,
   generatePrintHtml, openPrintWindow,
-} from "./PrintTemplates"
+} from "./PrintTemplates";
+import BarcodeScanner from "./BarcodeScanner";
 
 const inputClass =
   "w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors";
 
 const labelClass = "block text-xs font-medium text-[#9699B0] mb-1.5";
 
-export default function InstallationModal({ show, onClose, products, branches }) {
+export default function InstallationModal({ show, onClose, products, branches, category = "PC" }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -35,16 +36,23 @@ export default function InstallationModal({ show, onClose, products, branches })
   const [savedInstallation, setSavedInstallation] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState("brand");
 
-  const deliveredProducts =
-    products?.filter((p) => p.status === "delivered") || [];
+  // Scanner state
+  const [showScanner, setShowScanner] = useState(false);
+
+  const availableProducts =
+    category === "PC"
+      ? (products?.filter((p) => p.category === "PC" && p.status !== "installed") || [])
+      : (products?.filter((p) => p.category === category && p.status !== "installed") || []);
 
   const filteredProducts = snQuery.trim()
-    ? deliveredProducts.filter((p) => {
+    ? availableProducts.filter((p) => {
         const q = snQuery.toLowerCase();
         return (p.serial_number || "").toLowerCase().includes(q) ||
-               (p.name || "").toLowerCase().includes(q);
+               (p.name || "").toLowerCase().includes(q) ||
+               (p.custom_fields?.name_of_user || "").toLowerCase().includes(q) ||
+               (p.custom_fields?.department_name || "").toLowerCase().includes(q);
       })
-    : deliveredProducts;
+    : availableProducts;
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -79,12 +87,24 @@ export default function InstallationModal({ show, onClose, products, branches })
     setCustomFields(updated);
   };
 
+  const handleScan = (rawValue) => {
+    setShowScanner(false);
+    setSnQuery(rawValue);
+    setShowSuggestions(true);
+    // Auto-select if there's an exact serial match
+    const exact = availableProducts.find(
+      (p) => (p.serial_number || "").toLowerCase() === rawValue.toLowerCase()
+    );
+    if (exact) selectProduct(exact);
+  };
+
   const resetForm = () => {
     setSnQuery("");
     setSelectedProduct(null);
     setCustomFields([]);
     setSavedInstallation(null);
     setSelectedTemplate("brand");
+    setShowScanner(false);
   };
 
   const handleClose = () => {
@@ -100,18 +120,33 @@ export default function InstallationModal({ show, onClose, products, branches })
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      let customFieldsObj = null;
-      const validFields = customFields.filter((f) => f.name.trim() && f.value.trim());
-      if (validFields.length > 0) {
-        customFieldsObj = {};
-        validFields.forEach((f) => { customFieldsObj[f.name.trim()] = f.value.trim(); });
-      }
+      // Get organization_id (migration 001 replaced user_id with organization_id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("current_organization_id")
+        .eq("id", user.id)
+        .single();
+      const orgId = profile?.current_organization_id;
 
       // Auto-read license keys stored on the product
       const pcf = selectedProduct.custom_fields || {};
-      const winKey  = pcf.windows_key  || pcf.Windows_Key  || pcf.window_key  || null;
-      const offKey  = pcf.ms_office_key || pcf.MS_Office_Key || pcf.office_key || pcf.Office_Key || null;
-      const avKey   = pcf.antivirus_key || pcf.Antivirus_Key || pcf.antivirus  || null;
+      const winKey = pcf.windows_key || pcf.Windows_Key || pcf.window_key || null;
+      const offKey = pcf.ms_office_key || pcf.MS_Office_Key || pcf.office_key || pcf.Office_Key || null;
+      const avKey  = pcf.antivirus_serial_key || pcf.antivirus_key || pcf.Antivirus_Key || pcf.antivirus || null;
+
+      // Build custom_fields: PC metadata first, then user-added fields
+      const mergedCF = {};
+      if (category === "PC") {
+        const PC_CF_KEYS = [
+          "department_name", "address", "name_of_user", "room_no", "mobile_no", "email_id",
+          "windows_version", "ms_office_version", "antivirus_name", "antivirus_validity",
+          "antivirus_batchnumber", "warranty_period", "warranty_expiry_date",
+        ];
+        PC_CF_KEYS.forEach((k) => { if (pcf[k]) mergedCF[k] = pcf[k]; });
+      }
+      const validFields = customFields.filter((f) => f.name.trim() && f.value.trim());
+      validFields.forEach((f) => { mergedCF[f.name.trim()] = f.value.trim(); });
+      const customFieldsObj = Object.keys(mergedCF).length > 0 ? mergedCF : null;
 
       const branchId =
         selectedProduct?.branch_id ||
@@ -121,7 +156,7 @@ export default function InstallationModal({ show, onClose, products, branches })
       const { data: instData, error: installError } = await supabase
         .from("installations")
         .insert({
-          user_id: user.id,
+          organization_id: orgId,
           product_id: selectedProduct.id,
           branch_id: branchId,
           installation_date: new Date().toISOString().split("T")[0],
@@ -164,6 +199,11 @@ export default function InstallationModal({ show, onClose, products, branches })
   };
 
   if (!show) return null;
+
+  // BarcodeScanner renders full-screen over everything
+  if (showScanner) {
+    return <BarcodeScanner onDetected={handleScan} onClose={() => setShowScanner(false)} />;
+  }
 
   // ===== Success View =====
   if (savedInstallation) {
@@ -313,7 +353,7 @@ export default function InstallationModal({ show, onClose, products, branches })
           className="bg-white max-w-lg w-full rounded-2xl p-6 mx-4 my-auto"
         >
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold font-[var(--font-display)]">Record Installation</h2>
+            <h2 className="text-lg font-bold font-[var(--font-display)]">Record {category} Installation</h2>
             <button onClick={handleClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
               <X size={20} />
             </button>
@@ -322,19 +362,27 @@ export default function InstallationModal({ show, onClose, products, branches })
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Product Search */}
             <div ref={searchRef}>
-              <label className={labelClass}>Search by Serial Number or Product Name</label>
+              <label className={labelClass}>
+                {category === "PC" ? "Search by Serial No, Department, or User" : "Search by Serial Number or Product Name"}
+              </label>
               {selectedProduct ? (
                 <div className="flex items-center gap-3 bg-[#F0EDFF] border border-[#6C5CE7]/30 rounded-[10px] px-4 py-3">
                   <Monitor size={18} className="text-[#6C5CE7] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] font-semibold text-[#2D3436]">{selectedProduct.name}</div>
-                    <div className="text-[11px] text-gray-500 flex items-center gap-3">
-                      {selectedProduct.serial_number && (
-                        <span>SN: <span className="font-mono font-semibold text-[#6C5CE7]">{selectedProduct.serial_number}</span></span>
-                      )}
+                    <div className="text-[13.5px] font-semibold text-[#2D3436]">
+                      {selectedProduct.serial_number
+                        ? <><span className="font-mono text-[#6C5CE7]">{selectedProduct.serial_number}</span> — {selectedProduct.name}</>
+                        : selectedProduct.name}
+                    </div>
+                    <div className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
                       {selectedProduct.brand && <span>{selectedProduct.brand}</span>}
-                      {selectedProduct.category && (
-                        <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold px-1.5 py-0.5 rounded">{selectedProduct.category}</span>
+                      {category === "PC" && selectedProduct.custom_fields?.department_name && (
+                        <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold px-1.5 py-0.5 rounded">
+                          {selectedProduct.custom_fields.department_name}
+                        </span>
+                      )}
+                      {category === "PC" && selectedProduct.custom_fields?.name_of_user && (
+                        <span>{selectedProduct.custom_fields.name_of_user}</span>
                       )}
                     </div>
                   </div>
@@ -351,14 +399,22 @@ export default function InstallationModal({ show, onClose, products, branches })
                     onChange={(e) => { setSnQuery(e.target.value); setShowSuggestions(true); }}
                     onFocus={() => setShowSuggestions(true)}
                     placeholder="Type serial number or product name..."
-                    className={inputClass + " pl-10"}
+                    className={inputClass + " pl-10 pr-11"}
                     autoFocus
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    title="Scan barcode with camera"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-[#6C5CE7]/10 hover:bg-[#6C5CE7]/20 text-[#6C5CE7] transition-colors"
+                  >
+                    <ScanLine size={16} />
+                  </button>
                   {showSuggestions && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E2E4F0] rounded-xl shadow-lg z-10 max-h-[200px] overflow-y-auto">
                       {filteredProducts.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-gray-400">
-                          {snQuery.trim() ? "No delivered products match" : "No delivered products available"}
+                          {snQuery.trim() ? "No products match" : `No ${category} products available`}
                         </div>
                       ) : (
                         filteredProducts.map((product) => (
@@ -368,13 +424,21 @@ export default function InstallationModal({ show, onClose, products, branches })
                             onClick={() => selectProduct(product)}
                             className="w-full text-left px-4 py-2.5 hover:bg-[#F8F9FE] transition-colors border-b border-gray-50 last:border-0"
                           >
-                            <div className="text-[13px] font-medium text-[#2D3436]">{product.name}</div>
-                            <div className="text-[11px] text-gray-500 flex items-center gap-3">
-                              {product.serial_number && (
-                                <span>SN: <span className="font-mono font-semibold text-[#6C5CE7]">{product.serial_number}</span></span>
-                              )}
+                            <div className="text-[13px] font-medium text-[#2D3436]">
+                              {product.serial_number
+                                ? <><span className="font-mono font-bold text-[#6C5CE7]">{product.serial_number}</span> — {product.name}</>
+                                : product.name}
+                            </div>
+                            <div className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
                               {product.brand && <span>{product.brand}</span>}
-                              {product.category && <span>{product.category}</span>}
+                              {product.custom_fields?.department_name && (
+                                <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold px-1.5 py-0.5 rounded">
+                                  {product.custom_fields.department_name}
+                                </span>
+                              )}
+                              {category === "PC" && product.custom_fields?.name_of_user && (
+                                <span>{product.custom_fields.name_of_user}</span>
+                              )}
                             </div>
                           </button>
                         ))

@@ -67,24 +67,26 @@ export default function InvoicesContent({ invoices }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { error } = await supabase.from("invoices").insert({
-        user_id: user.id,
-        invoice_number: form.invoice_number,
-        customer_name: form.customer_name,
-        amount: parseFloat(form.amount),
-        gst_amount:
-          parseFloat(form.amount) * (parseFloat(form.gst_percent) / 100),
-        status: form.status,
-        type: form.type,
-        date: new Date().toISOString(),
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_number: form.invoice_number,
+          customer_name: form.customer_name,
+          amount: parseFloat(form.amount),
+          gst_amount: parseFloat(form.amount) * (parseFloat(form.gst_percent) / 100),
+          status: form.status,
+          type: form.type,
+          date: new Date().toISOString(),
+        }),
       });
-      if (!error) {
+      if (res.ok) {
         setShowModal(false);
         setForm({ ...defaultForm });
         router.refresh();
+      } else {
+        const err = await res.json();
+        alert("Failed to add invoice: " + err.error);
       }
     } finally {
       setSaving(false);
@@ -92,11 +94,7 @@ export default function InvoicesContent({ invoices }) {
   };
 
   const handleCSVImport = async (rows) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
     const mapped = rows.map(r => ({
-      user_id: user.id,
       invoice_number: r.invoice_number || "",
       customer_name: r.customer_name || "",
       amount: parseFloat(r.amount) || 0,
@@ -105,8 +103,17 @@ export default function InvoicesContent({ invoices }) {
       type: r.type || "sale",
       date: new Date().toISOString(),
     }));
-    const { error } = await supabase.from("invoices").insert(mapped);
-    if (error) throw new Error(error.message);
+    for (const row of mapped) {
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+    }
     router.refresh();
     return mapped.length;
   };

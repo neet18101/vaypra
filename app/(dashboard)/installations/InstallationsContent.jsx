@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X, Printer, Eye, Trash2,
+  Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X,
+  Printer, Eye, Trash2, Zap, ScanLine, Copy,
 } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
@@ -12,9 +13,19 @@ import InstallationModal, { printInstallation } from "@/app/components/Installat
 import { TEMPLATES, getBrandTheme } from "@/app/components/PrintTemplates";
 import { createClient } from "@/utils/supabase/client";
 
+const TABS = [
+  { id: "PC",                     label: "PC",                     icon: Monitor, color: "#6C5CE7" },
+  { id: "Single Printer",         label: "Single Printer",         icon: Printer, color: "#00CEC9" },
+  { id: "Multi-Function Printer", label: "Multi-Function Printer", icon: Printer, color: "#0984E3" },
+  { id: "UPS",                    label: "UPS",                    icon: Zap,     color: "#FDCB6E" },
+  { id: "Scanner",                label: "Scanner",                icon: ScanLine,color: "#00B894" },
+  { id: "Photocopier",              label: "Photocopier",              icon: Copy,    color: "#E17055" },
+];
+
 export default function InstallationsContent({ installations, products, branches }) {
   const router = useRouter();
   const supabase = createClient();
+  const [activeTab, setActiveTab] = useState("PC");
   const [showModal, setShowModal] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,10 +55,11 @@ export default function InstallationsContent({ installations, products, branches
     }
   };
 
-  const totalInstallations = installations.length;
+  const totalInstallations = installations.filter((i) => TABS.some((t) => t.id === i.products?.category)).length;
 
   const thisMonthCount = installations.filter((inst) => {
     if (!inst.installation_date) return false;
+    if (!TABS.some((t) => t.id === inst.products?.category)) return false;
     const d = new Date(inst.installation_date);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -71,6 +83,7 @@ export default function InstallationsContent({ installations, products, branches
   };
 
   const filteredInstallations = installations.filter((inst) => {
+    if (inst.products?.category !== activeTab) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     const productName = inst.products?.name || "";
@@ -83,66 +96,83 @@ export default function InstallationsContent({ installations, products, branches
     );
   });
 
-  const deliveredProducts = products.filter((p) => p.status === "delivered");
-
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[24px] font-extrabold font-[var(--font-display)]">
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-[22px] sm:text-[24px] font-extrabold font-[var(--font-display)]">
           Installations
         </h1>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
+          className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
         >
           <Plus size={16} />
           Record Installation
         </button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Quick Stats — horizontal scroll on mobile */}
+      <div className="flex gap-3 mb-5 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
+            className="flex-shrink-0 w-[160px] sm:w-auto"
           >
-            <Card className="flex items-center gap-4">
-              <div
-                className="w-11 h-11 rounded-full flex items-center justify-center"
-                style={{ background: stat.bg }}
-              >
-                <stat.icon size={20} style={{ color: stat.color }} />
+            <Card className="flex items-center gap-3 py-3 px-3 sm:px-4 h-full">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: stat.bg }}>
+                <stat.icon size={18} style={{ color: stat.color }} />
               </div>
               <div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-[11px] sm:text-sm text-gray-500 leading-tight">{stat.label}</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900">{stat.value}</p>
               </div>
             </Card>
           </motion.div>
         ))}
       </div>
 
+      {/* Tabs — scrollable, bigger touch targets on mobile */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          const count = installations.filter((i) => i.products?.category === tab.id).length;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSearchQuery(""); setExpandedRow(null); }}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2.5 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all min-h-[42px] ${
+                isActive ? "text-white shadow-md" : "bg-white border border-[#E2E4F0] text-gray-600"
+              }`}
+              style={isActive ? { background: `linear-gradient(135deg, ${tab.color}, ${tab.color}cc)` } : {}}
+            >
+              <tab.icon size={14} style={isActive ? {} : { color: tab.color }} />
+              {tab.label}
+              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/30 text-white" : "bg-gray-100 text-gray-500"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by product name, serial number, or customer..."
-            className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-xl pl-10 pr-10 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors"
+            placeholder="Search name, serial, department…"
+            className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors"
           />
           {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={16} />
+            <button onClick={() => setSearchQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+              <X size={15} />
             </button>
           )}
         </div>
@@ -159,110 +189,113 @@ export default function InstallationsContent({ installations, products, branches
       ) : (
         <>
           {/* ── Mobile cards ── */}
-          <div className="md:hidden space-y-3">
-            {filteredInstallations.map((installation) => {
+          <div className="md:hidden space-y-3 pb-24">
+            {filteredInstallations.map((installation, idx) => {
               const isExpanded = expandedRow === installation.id;
-              const branchName = branches.find((b) => b.id === installation.branch_id)?.name || "Unknown";
+              const branchName = branches.find((b) => b.id === installation.branch_id)?.name || "";
               const cf = installation.custom_fields || {};
-              const cfKeys = Object.keys(cf);
+              const dept = cf.department_name || installation.customer_name || "—";
               return (
                 <motion.div
                   key={installation.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                  transition={{ delay: idx * 0.03 }}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition-transform"
                 >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div>
-                        <div className="font-semibold text-[#2D3436] text-sm">{installation.products?.name || "Unknown"}</div>
-                        <div className="font-mono text-xs text-[#6C5CE7] mt-0.5">{installation.products?.serial_number || "—"}</div>
+                  {/* Card header — tap to view report */}
+                  <button
+                    className="w-full text-left p-4"
+                    onClick={() => router.push(`/installations/${installation.id}`)}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[#2D3436] text-[14px] truncate">{installation.products?.name || "Unknown"}</div>
+                        <div className="font-mono text-[12px] text-[#6C5CE7] mt-0.5">{installation.products?.serial_number || "—"}</div>
                       </div>
                       <StatusBadge status={installation.status} />
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12px]">
-                      <div>
-                        <div className="text-gray-400 mb-0.5">Customer</div>
-                        <div className="text-gray-700 font-medium">{installation.customer_name}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400 mb-0.5">Installer</div>
-                        <div className="text-gray-700 font-medium">{installation.installer_name}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400 mb-0.5">Date</div>
-                        <div className="text-gray-700">{formatDate(installation.installation_date)}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400 mb-0.5">Branch</div>
-                        <div className="text-gray-700">{branchName}</div>
-                      </div>
+                    <div className="text-[12px] text-gray-500 truncate">{dept}</div>
+                    <div className="flex items-center gap-4 mt-2 text-[12px] text-gray-500">
+                      {installation.installation_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar size={11} />
+                          {formatDate(installation.installation_date)}
+                        </span>
+                      )}
+                      {installation.installer_name && (
+                        <span className="flex items-center gap-1">
+                          <User size={11} />
+                          {installation.installer_name}
+                        </span>
+                      )}
                     </div>
-                  </div>
+                  </button>
 
                   {/* Expanded keys */}
-                  {isExpanded && (
-                    <div className="bg-[#F8F9FE] px-4 py-3 border-t border-gray-100 space-y-2">
-                      {installation.windows_key && (
-                        <div className="flex items-center gap-2 text-[12px]">
-                          <Key size={11} className="text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-500">Windows:</span>
-                          <span className="font-mono text-[#2D3436] break-all">{installation.windows_key}</span>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-[#F8F9FE] px-4 py-3 border-t border-gray-100 space-y-2">
+                          {installation.windows_key && (
+                            <div className="text-[12px]">
+                              <span className="text-gray-400 text-[11px]">Windows Key</span>
+                              <div className="font-mono text-[#2D3436] break-all mt-0.5">{installation.windows_key}</div>
+                            </div>
+                          )}
+                          {installation.ms_office_key && (
+                            <div className="text-[12px]">
+                              <span className="text-gray-400 text-[11px]">MS Office Key</span>
+                              <div className="font-mono text-[#2D3436] break-all mt-0.5">{installation.ms_office_key}</div>
+                            </div>
+                          )}
+                          {installation.antivirus_key && (
+                            <div className="text-[12px]">
+                              <span className="text-gray-400 text-[11px]">Antivirus Key</span>
+                              <div className="font-mono text-[#2D3436] break-all mt-0.5">{installation.antivirus_key}</div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {installation.ms_office_key && (
-                        <div className="flex items-center gap-2 text-[12px]">
-                          <Key size={11} className="text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-500">Office:</span>
-                          <span className="font-mono text-[#2D3436] break-all">{installation.ms_office_key}</span>
-                        </div>
-                      )}
-                      {installation.antivirus_key && (
-                        <div className="flex items-center gap-2 text-[12px]">
-                          <Key size={11} className="text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-500">Antivirus:</span>
-                          <span className="font-mono text-[#2D3436] break-all">{installation.antivirus_key}</span>
-                        </div>
-                      )}
-                      {cfKeys.filter(k => !["address","state","pin","tel_no","email","contact_person","proc_ram_ssd","win_version","office_version","av_name","av_validity","eng_code"].includes(k)).map((k) => (
-                        <div key={k} className="flex items-center gap-2 text-[12px]">
-                          <Key size={11} className="text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-500">{k}:</span>
-                          <span className="font-mono text-[#2D3436]">{cf[k]}</span>
-                        </div>
-                      ))}
-                      {installation.notes && (
-                        <p className="text-[12px] text-gray-600 pt-1 border-t border-gray-200">{installation.notes}</p>
-                      )}
-                    </div>
-                  )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                  <div className="flex items-center justify-end gap-2 px-4 py-2 border-t border-gray-100">
+                  {/* Action row — large tap targets */}
+                  <div className="flex border-t border-gray-100">
                     <button
                       onClick={() => router.push(`/installations/${installation.id}`)}
-                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                      className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-gray-50 transition-colors"
                     >
-                      <Eye size={14} /> View
+                      <Eye size={16} className="text-[#6C5CE7]" />
+                      <span className="text-[11px] font-medium">View</span>
                     </button>
                     <button
                       onClick={() => handlePrintClick(installation)}
-                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                      className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-gray-50 transition-colors border-l border-gray-100"
                     >
-                      <Printer size={14} /> Print
+                      <Printer size={16} className="text-[#00CEC9]" />
+                      <span className="text-[11px] font-medium">Print</span>
                     </button>
                     <button
                       onClick={() => setExpandedRow(isExpanded ? null : installation.id)}
-                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-[#6C5CE7] px-2 py-1.5 rounded-lg hover:bg-[#6C5CE7]/10 transition-colors"
+                      className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-gray-50 transition-colors border-l border-gray-100"
                     >
-                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      {isExpanded ? "Less" : "Keys"}
+                      {isExpanded ? <ChevronUp size={16} className="text-[#FDCB6E]" /> : <Key size={16} className="text-[#FDCB6E]" />}
+                      <span className="text-[11px] font-medium">{isExpanded ? "Less" : "Keys"}</span>
                     </button>
                     <button
                       onClick={() => handleDelete(installation)}
                       disabled={deletingId === installation.id}
-                      className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40"
+                      className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-red-50 transition-colors border-l border-gray-100 disabled:opacity-40"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={16} className="text-[#E17055]" />
+                      <span className="text-[11px] font-medium">Delete</span>
                     </button>
                   </div>
                 </motion.div>
@@ -282,12 +315,12 @@ export default function InstallationsContent({ installations, products, branches
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Serial No.
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {/* <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Customer
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Installer
-                  </th>
+                  </th> */}
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
@@ -328,7 +361,7 @@ export default function InstallationsContent({ installations, products, branches
                             {installation.products?.serial_number || "\u2014"}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4">
+                        {/* <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1.5">
                             <User size={14} className="text-gray-400" />
                             <span className="text-sm text-gray-700">
@@ -338,7 +371,7 @@ export default function InstallationsContent({ installations, products, branches
                         </td>
                         <td className="py-3.5 px-4 text-sm text-gray-600">
                           {installation.installer_name}
-                        </td>
+                        </td> */}
                         <td className="py-3.5 px-4 text-sm text-gray-600">
                           {formatDate(installation.installation_date)}
                         </td>
@@ -556,6 +589,15 @@ export default function InstallationsContent({ installations, products, branches
         })()}
       </AnimatePresence>
 
+      {/* ── Mobile FAB ── */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="sm:hidden fixed bottom-6 right-5 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-[#6C5CE7] to-[#8B5CF6] text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Record Installation"
+      >
+        <Plus size={24} />
+      </button>
+
       {/* Installation Modal */}
       {showModal && (
         <InstallationModal
@@ -563,6 +605,7 @@ export default function InstallationsContent({ installations, products, branches
           onClose={() => setShowModal(false)}
           products={products}
           branches={branches}
+          category={activeTab}
         />
       )}
     </div>

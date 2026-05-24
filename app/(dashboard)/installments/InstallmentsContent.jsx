@@ -54,27 +54,27 @@ export default function InstallmentsContent({ installments }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const totalAmount = Number(form.total_amount) || 0;
       const paidAmount = Number(form.paid_amount) || 0;
-      const remaining = totalAmount - paidAmount;
-
-      const { error } = await supabase.from("installments").insert({
-        user_id: user.id,
-        customer_name: form.customer_name,
-        total_amount: totalAmount,
-        paid_amount: paidAmount,
-        remaining,
-        total_emis: Number(form.total_emis) || 0,
-        paid_emis: Number(form.paid_emis) || 0,
-        next_due_date: form.next_due_date || null,
-        status: form.status,
+      const res = await fetch("/api/installments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: form.customer_name,
+          total_amount: totalAmount,
+          paid_amount: paidAmount,
+          remaining: totalAmount - paidAmount,
+          total_emis: Number(form.total_emis) || 0,
+          paid_emis: Number(form.paid_emis) || 0,
+          next_due_date: form.next_due_date || null,
+          status: form.status,
+        }),
       });
-
-      if (error) throw error;
-
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Failed to add installment plan: " + err.error);
+        return;
+      }
       setShowModal(false);
       setForm(emptyForm);
       router.refresh();

@@ -13,7 +13,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
   const labelTd = { ...cellTd, width: "18%", fontWeight: 600 }
   const valueTd = { ...cellTd, width: "32%" }
   const sectionTd = { ...cellTd, background: "#e9e9e9", fontWeight: 700, padding: "4px 6px" }
-  const titleTd = { ...cellTd, textAlign: "center", background: "#f1f1f1", fontWeight: 700, letterSpacing: 3, fontSize: 12, padding: "5px" }
+  const titleTd = { ...cellTd, textAlign: "center", background: "#dce8f5", fontWeight: 800, letterSpacing: 4, fontSize: 14, padding: "7px", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#0a3a6b", textTransform: "uppercase" }
   const yesnoTd = { ...cellTd, textAlign: "right", whiteSpace: "nowrap", width: 100 }
   const inp = { width: "100%", border: "none", outline: "none", font: "inherit", background: "transparent", padding: "1px 0" }
 
@@ -86,11 +86,9 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
 
   const checklist = [
     { id: "c1", label: "Hardware unboxing & physical setup" },
-    { id: "c2", label: "Power-on test & BIOS check" },
     { id: "c3", label: "Windows installation & activation" },
     { id: "c4", label: "MS Office installation & activation" },
     { id: "c5", label: "Antivirus installation & activation" },
-    { id: "c6", label: "All drivers installed (LAN/WiFi/Audio/Display)" },
     { id: "c7", label: "Windows Updates installed" },
   ]
 
@@ -104,19 +102,14 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
   })()
 
   return (
-    <div style={{ maxWidth: 1060, margin: "0 auto", background: "#fff", border: "1px solid #d0d0d0", fontFamily: "Arial, Helvetica, sans-serif", color: "#222" }}>
+    <div style={{ maxWidth: 1060, margin: "0 auto", background: "#fff", border: "1px solid #d0d0d0", fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif", color: "#222" }}>
       {/* Header */}
-      <div style={{ padding: "8px 14px 2px 14px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 style={{ fontStyle: "italic", fontWeight: 800, fontSize: 20, margin: 0, color: template.primary_color, letterSpacing: 0.5 }}>
-          {template.brand_name}
-          {template.tagline && (
-            <span style={{ color: "#222", fontStyle: "normal", fontWeight: 600, fontSize: 12, marginLeft: 8 }}>{template.tagline}</span>
-          )}
-        </h1>
-        <div style={{ fontSize: 10, color: "#444", textAlign: "right", lineHeight: 1.4 }}>
-          <div><strong>Address:</strong> A-133, NBC Commercial Complex, Sector-1, Gomtinagar</div>
+      <div style={{ padding: "6px 14px 4px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #e0e0e0" }}>
+        <img src="/logo.png" alt="Rangayan Creations" style={{ height: 56, objectFit: "contain" }} />
+        <div style={{ fontSize: 10, color: "#444", textAlign: "right", lineHeight: 1.6 }}>
+          <div><strong>Address:</strong> A-113, NBCC Commercial Complex, Sector-1, Gomtinagar Ext Lucknow 226010</div>
           <div><strong>Support:</strong> +91-9453495949</div>
-          <div><strong>Email:</strong> Rangayancreations@gmail.com</div>
+          <div><strong>Email:</strong> support@rangayancreations.com</div>
         </div>
       </div>
 
@@ -125,28 +118,29 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
           <tr><td colSpan={4} style={titleTd}>{template.report_title}</td></tr>
 
           <tr>
-            <td colSpan={2} style={cellTd}></td>
-            <td style={labelTd}>Brand Name:</td>
-            <td style={valueTd}>{textField("device_brand", { placeholder: "e.g. HP / Dell / Lenovo" })}</td>
+            <td style={labelTd}>Department Name:</td><td style={valueTd}>{textField("department_name")}</td>
+            <td style={labelTd}>Specifications:</td><td style={valueTd}>{textField("model_no", { placeholder: "e.g. HP AIO i5 512SSD 8GB W11" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>User Name:</td><td style={valueTd}>{textField("customer_name")}</td>
-            <td style={labelTd}>Model No:</td><td style={valueTd}>{textField("model_no", { placeholder: "e.g. HP 24-cb1xxx" })}</td>
-          </tr>
-          <tr>
-            <td style={labelTd}>Address:</td><td style={cellTd}>{textField("address")}</td>
+            <td style={labelTd}>Address:</td>
+            <td style={{ ...cellTd, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+              {mode === "fill"
+                ? <textarea value={v("address")} onChange={(e) => onFill("address", e.target.value)} rows={2} style={{ ...inp, resize: "vertical", minHeight: 32 }} />
+                : <span style={{ display: "block", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{v("address") || "—"}</span>}
+            </td>
             <td style={labelTd}>M/C Serial No:</td><td style={cellTd}>{textField("mc_serial")}</td>
           </tr>
           <tr>
-            <td style={labelTd}>State:</td><td style={cellTd}>{textField("state")}</td>
+            <td style={labelTd}>Brand Name:</td>
+            <td style={cellTd}>{textField("device_brand", { placeholder: "e.g. HP / Dell / Lenovo" })}</td>
             <td style={labelTd}>Installation Date:</td><td style={cellTd}>{textField("install_date", { type: "date" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Pin:</td><td style={cellTd}>{textField("pin")}</td>
+            <td style={labelTd}>Mobile No.</td><td style={cellTd}>{textField("tel_no", { type: "tel" })}</td>
             <td style={labelTd}>Warranty Period:</td><td style={cellTd}><strong>3 Years</strong></td>
           </tr>
           <tr>
-            <td style={labelTd}>Tel No:</td><td style={cellTd}>{textField("tel_no", { type: "tel" })}</td>
+            <td style={labelTd}>Email ID:</td><td style={cellTd}>{textField("email", { type: "email" })}</td>
             <td style={labelTd}>Warranty Expiry Date:</td>
             <td style={cellTd}>
               <span style={{ color: warrantyExpiry ? "#222" : "#999" }}>
@@ -155,17 +149,9 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
             </td>
           </tr>
           <tr>
-            <td style={labelTd}>Email ID:</td><td style={cellTd}>{textField("email", { type: "email" })}</td>
+            <td style={labelTd}>Name of User:</td><td style={cellTd}>{textField("contact_person")}</td>
             <td style={labelTd}>Room No:</td><td style={cellTd}>{textField("room_no")}</td>
           </tr>
-          <tr>
-            <td style={labelTd}>Name of User:</td><td colSpan={3} style={cellTd}>{textField("contact_person")}</td>
-          </tr>
-          <tr>
-            <td style={labelTd}>Processor / RAM / SSD:</td>
-            <td colSpan={3} style={cellTd}>{textField("proc_ram_ssd", { placeholder: "i5/8GB/512GB" })}</td>
-          </tr>
-
           {/* License Keys */}
           <tr><td colSpan={4} style={sectionTd}>LICENSE / PRODUCT KEYS</td></tr>
           <tr>
@@ -173,7 +159,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("win_key", { placeholder: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Windows Version:</td><td style={cellTd}><strong>Windows 11</strong></td>
+            <td style={labelTd}>Windows Version:</td><td style={cellTd}>{textField("win_version", { placeholder: "e.g. Windows 11 Professional" })}</td>
             <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("win_activation")}</td>
           </tr>
           <tr>
@@ -181,7 +167,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("office_key", { placeholder: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>MS Office Version:</td><td style={cellTd}><strong>MS Office</strong></td>
+            <td style={labelTd}>MS Office Version:</td><td style={cellTd}>{textField("office_version", { placeholder: "e.g. MS Office 2021" })}</td>
             <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("office_activation")}</td>
           </tr>
           <tr>
@@ -189,11 +175,11 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
             <td colSpan={3} style={cellTd}>{textField("av_key", { placeholder: "Enter antivirus product key" })}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Antivirus Name:</td><td style={cellTd}><strong>Quick Heal</strong></td>
+            <td style={labelTd}>Antivirus Name:</td><td style={cellTd}>{textField("av_name", { placeholder: "e.g. Quick Heal" })}</td>
             <td style={labelTd}>Activation Status:</td><td style={cellTd}>{actStatus("av_activation")}</td>
           </tr>
           <tr>
-            <td style={labelTd}>Validity:</td><td colSpan={3} style={cellTd}><strong>3 Years</strong></td>
+            <td style={labelTd}>Antivirus Validity:</td><td colSpan={3} style={cellTd}>{textField("av_validity", { placeholder: "e.g. 3 Years" })}</td>
           </tr>
           {/* Checklist only */}
           <tr>
@@ -280,129 +266,185 @@ export function buildHpPrintHtml(fillValues, template) {
     </span>`
   }
 
-  const C = "border:1px solid #cfcfcf;padding:3px 6px;vertical-align:middle;font-size:11px"
-  const L = `${C};width:18%;font-weight:600`
+  const C = "border:1px solid #999;padding:8px 7px;vertical-align:middle;font-size:11px;color:#000;font-family:Arial,Helvetica,sans-serif"
+  const L = `${C};width:18%;font-weight:700`
   const V = `${C};width:32%`
-  const S = `${C};background:#e9e9e9;font-weight:700;padding:4px 6px`
-  const T = `${C};text-align:center;background:#f1f1f1;font-weight:700;letter-spacing:3px;font-size:12px;padding:5px`
+  const S = `${C};background:#d0d0d0;font-weight:700;padding:8px 7px;color:#000`
+  const T = `${C};text-align:center;background:#dce8f5;font-weight:800;letter-spacing:4px;font-size:14px;padding:11px 8px;color:#0a3a6b;text-transform:uppercase`
   const YN = `${C};text-align:right;white-space:nowrap;width:100px`
 
   const checklist = [
     { id: "c1", label: "Hardware unboxing & physical setup" },
-    { id: "c2", label: "Power-on test & BIOS check" },
     { id: "c3", label: "Windows installation & activation" },
     { id: "c4", label: "MS Office installation & activation" },
     { id: "c5", label: "Antivirus installation & activation" },
-    { id: "c6", label: "All drivers installed (LAN/WiFi/Audio/Display)" },
     { id: "c7", label: "Windows Updates installed" },
   ]
 
   const checkRows = checklist.map((c) =>
-    `<tr><td style="${C}">${c.label}</td><td colspan="3" style="${YN}">${yn(c.id)}</td></tr>`
+    `<tr><td style="${C};width:76%">${c.label}</td><td style="${C};text-align:right;white-space:nowrap">${yn(c.id)}</td></tr>`
   ).join("")
 
-  return `<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"><title> </title>
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#222}
-      @page{size:A4 landscape;margin:8mm}
-      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-      table{border-collapse:collapse;width:100%}
-    </style>
-  </head><body>
-    <div style="background:#fff;font-family:Arial,Helvetica,sans-serif;color:#222">
-      <div style="padding:8px 14px 2px;display:flex;justify-content:space-between;align-items:flex-start">
-        <h1 style="font-style:italic;font-weight:800;font-size:20px;color:${template.primary_color};letter-spacing:.5px;margin:0">
-          ${template.brand_name}${template.tagline ? `<span style="color:#222;font-style:normal;font-weight:600;font-size:12px;margin-left:8px">${template.tagline}</span>` : ""}
-        </h1>
-        <div style="font-size:10px;color:#444;text-align:right;line-height:1.4">
-          <div><strong>Address:</strong> A-133, NBC Commercial Complex, Sector-1, Gomtinagar</div>
-          <div><strong>Support:</strong> +91-9453495949</div>
-          <div><strong>Email:</strong> Rangayancreations@gmail.com</div>
-        </div>
-      </div>
-      <table style="margin-top:4px"><tbody>
-        <tr><td colspan="4" style="${T}">${template.report_title}</td></tr>
-        <tr>
-          <td colspan="2" style="${C}"></td>
-          <td style="${L}">Brand Name:</td><td style="${V}">${tf("device_brand")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">User Name:</td><td style="${V}">${tf("customer_name")}</td>
-          <td style="${L}">Model No:</td><td style="${V}">${tf("model_no")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Address:</td><td style="${C}">${tf("address")}</td>
-          <td style="${L}">M/C Serial No:</td><td style="${C}">${tf("mc_serial")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">State:</td><td style="${C}">${tf("state")}</td>
-          <td style="${L}">Installation Date:</td><td style="${C}">${tf("install_date", true)}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Pin:</td><td style="${C}">${tf("pin")}</td>
-          <td style="${L}">Warranty Period:</td><td style="${C}"><strong>3 Years</strong></td>
-        </tr>
-        <tr>
-          <td style="${L}">Tel No:</td><td style="${C}">${tf("tel_no")}</td>
-          <td style="${L}">Warranty Expiry Date:</td>
-          <td style="${C}"><span style="color:${warrantyExpiry?"#222":"#999"}">${warrantyExpiry||"Auto: install date + 3 years"}</span></td>
-        </tr>
-        <tr>
-          <td style="${L}">Email ID:</td><td style="${C}">${tf("email")}</td>
-          <td style="${L}">Room No:</td><td style="${C}">${tf("room_no")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Name of User:</td><td colspan="3" style="${C}">${tf("contact_person")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Processor / RAM / SSD:</td>
-          <td colspan="3" style="${C}">${tf("proc_ram_ssd")}</td>
-        </tr>
-        <tr><td colspan="4" style="${S}">LICENSE / PRODUCT KEYS</td></tr>
-        <tr>
-          <td style="${L}">Windows Key:</td>
-          <td colspan="3" style="${C}">${tf("win_key")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Windows Version:</td><td style="${C}"><strong>Windows 11</strong></td>
-          <td style="${L}">Activation Status:</td><td style="${C}">${act("win_activation")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">MS Office Key:</td>
-          <td colspan="3" style="${C}">${tf("office_key")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">MS Office Version:</td><td style="${C}"><strong>MS Office</strong></td>
-          <td style="${L}">Activation Status:</td><td style="${C}">${act("office_activation")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Antivirus Key:</td>
-          <td colspan="3" style="${C}">${tf("av_key")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Antivirus Name:</td><td style="${C}"><strong>Quick Heal</strong></td>
-          <td style="${L}">Activation Status:</td><td style="${C}">${act("av_activation")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Validity:</td><td colspan="3" style="${C}"><strong>3 Years</strong></td>
-        </tr>
-        <tr><td colspan="4" style="${S}">INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td></tr>
-        ${checkRows}
-        <tr><td colspan="4" style="${S}">REMARKS</td></tr>
-        <tr><td colspan="4" style="${C};height:32px">${tf("remarks")}</td></tr>
-        <tr>
-          <td style="${L}">Service Date:</td><td style="${C}">${tf("service_date", true)}</td>
-          <td style="${L}">User Name:</td><td style="${C}">${tf("cust_signing")}</td>
-        </tr>
-      </tbody></table>
-      <div style="display:flex;justify-content:space-between;padding:30px 14px 8px;font-size:11px">
-        <div style="width:45%;border-top:1px solid #555;padding-top:4px;text-align:center">${template.footer_left}</div>
-        <div style="width:45%;border-top:1px solid #555;padding-top:4px;text-align:center">${template.footer_right}</div>
-      </div>
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Installation Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;font-family:'Nunito',Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff}
+    @page{size:A4 portrait;margin:7mm 8mm}
+    @media print{
+      html,body{width:100%;height:100%}
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+    .page-wrap{height:calc(297mm - 14mm);display:flex;flex-direction:column}
+    .page-spacer{flex:1;min-height:0}
+    table{border-collapse:collapse;width:100%;table-layout:fixed}
+    td{overflow:hidden;word-break:break-word}
+    .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #0a3a6b;padding-bottom:5px;margin-bottom:4px}
+    .hdr-contact{font-size:9.5px;color:#000;text-align:right;line-height:1.7}
+    .footer{display:flex;justify-content:space-between;padding-top:32px;font-size:10.5px}
+    .footer-sig{width:44%;text-align:center;font-weight:600}
+    .footer-sig .sig-name{margin-bottom:28px;display:block}
+    .footer-sig .sig-line{border-top:1px solid #000;padding-top:3px;display:block}
+  </style>
+</head><body>
+<div class="page-wrap">
+  <!-- Header -->
+  <div class="hdr">
+    <img src="/logo.png" alt="Rangayan Creations" style="height:52px;object-fit:contain;max-width:55%" />
+    <div class="hdr-contact">
+      <div><strong>Address:</strong> A-113, NBCC Commercial Complex, Sector-1, Gomtinagar Ext Lucknow 226010</div>
+      <div><strong>Support:</strong> +91-9453495949 &nbsp;|&nbsp; <strong>Email:</strong> support@rangayancreations.com</div>
     </div>
-  </body></html>`
+  </div>
+
+  <!-- Report Title -->
+  <table style="margin-bottom:3px">
+    <tr><td style="${T}">${template.report_title}</td></tr>
+  </table>
+
+  <!-- Customer & Machine Info -->
+  <table>
+    <colgroup>
+      <col style="width:17%"><col style="width:33%">
+      <col style="width:17%"><col style="width:33%">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="${L}">Department Name</td><td style="${V}">${tf("department_name")}</td>
+        <td style="${L}">Specifications</td><td style="${V}">${tf("model_no")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Address</td><td style="${C};white-space:pre-wrap">${tf("address")}</td>
+        <td style="${L}">M/C Serial No.</td><td style="${C}">${tf("mc_serial")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Brand Name</td><td style="${C}">${tf("device_brand")}</td>
+        <td style="${L}">Installation Date</td><td style="${C}">${tf("install_date", true)}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Mobile No.</td><td style="${C}">${tf("tel_no")}</td>
+        <td style="${L}">Warranty Period</td><td style="${C}"><strong>3 Years</strong></td>
+      </tr>
+      <tr>
+        <td style="${L}">Email ID</td><td style="${C}">${tf("email")}</td>
+        <td style="${L}">Warranty Expiry Date</td>
+        <td style="${C}">${warrantyExpiry || ""}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Name of User</td><td style="${C}">${tf("contact_person")}</td>
+        <td style="${L}">Room No.</td><td style="${C}">${tf("room_no")}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- License Keys -->
+  <table style="margin-top:3px">
+    <colgroup>
+      <col style="width:17%"><col style="width:33%">
+      <col style="width:17%"><col style="width:33%">
+    </colgroup>
+    <tbody>
+      <tr><td colspan="4" style="${S}">LICENSE / PRODUCT KEYS</td></tr>
+      <tr>
+        <td style="${L}">Windows Key</td>
+        <td colspan="3" style="${C};font-family:'Courier New',monospace;letter-spacing:0.5px">${tf("win_key")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Windows Version</td><td style="${C}">${tf("win_version")}</td>
+        <td style="${L}">Activation Status</td><td style="${C}">${act("win_activation")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">MS Office Key</td>
+        <td colspan="3" style="${C};font-family:'Courier New',monospace;letter-spacing:0.5px">${tf("office_key")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">MS Office Version</td><td style="${C}">${tf("office_version")}</td>
+        <td style="${L}">Activation Status</td><td style="${C}">${act("office_activation")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Antivirus Key</td>
+        <td colspan="3" style="${C};font-family:'Courier New',monospace;letter-spacing:0.5px">${tf("av_key")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Antivirus Name</td><td style="${C}">${tf("av_name")}</td>
+        <td style="${L}">Activation Status</td><td style="${C}">${act("av_activation")}</td>
+      </tr>
+      <tr>
+        <td style="${L}">Antivirus Validity</td><td colspan="3" style="${C}">${tf("av_validity")}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Checklist -->
+  <table style="margin-top:3px">
+    <colgroup><col style="width:76%"><col style="width:24%"></colgroup>
+    <tbody>
+      <tr><td colspan="2" style="${S}">INSTALLATION CHECKLIST &nbsp;(Yes / No)</td></tr>
+      ${checkRows}
+    </tbody>
+  </table>
+
+  <!-- Remarks -->
+  <table style="margin-top:3px">
+    <tbody>
+      <tr><td colspan="4" style="${S}">REMARKS</td></tr>
+      <tr><td style="${C};height:55px">${tf("remarks")}</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Service Date + User Name -->
+  <table style="margin-top:3px">
+    <colgroup>
+      <col style="width:17%"><col style="width:33%">
+      <col style="width:17%"><col style="width:33%">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="${L}">Service Date</td><td style="${C}">${tf("service_date", true)}</td>
+        <td style="${L}">User Name</td><td style="${C}">${tf("cust_signing")}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Spacer pushes footer to bottom -->
+  <div class="page-spacer"></div>
+
+  <!-- Signatures -->
+  <div class="footer">
+    <div class="footer-sig">
+      <span class="sig-name">${template.footer_left}</span>
+      <span class="sig-line">Signature</span>
+    </div>
+    <div class="footer-sig">
+      <span class="sig-name">&nbsp;</span>
+      <span class="sig-line">${template.footer_right}</span>
+    </div>
+  </div>
+</div>
+</body></html>`
 }
 
 export function printHpForm(fillValues, template) {
@@ -412,7 +454,21 @@ export function printHpForm(fillValues, template) {
   win.document.write(html)
   win.document.close()
   win.focus()
-  setTimeout(() => win.print(), 250)
+  // Wait for logo + Nunito font to load before printing
+  const img = win.document.querySelector("img")
+  const doPrint = () => {
+    if (win.document.fonts?.ready) {
+      win.document.fonts.ready.then(() => win.print())
+    } else {
+      win.print()
+    }
+  }
+  if (img && !img.complete) {
+    img.onload = () => doPrint()
+    img.onerror = () => doPrint()
+  } else {
+    setTimeout(() => doPrint(), 400)
+  }
 }
 
 // ─── Template config ───────────────────────────────────────────────────────
@@ -422,7 +478,7 @@ export const HP_TEMPLATE = {
   tagline: "",
   primary_color: "#0096d6",
   report_title: "INSTALLATION REPORT",
-  footer_left: "Engineer Signature",
+  footer_left: "Avanish Mishra (Engineer)",
   footer_right: "Customer Signature & Stamp",
 }
 

@@ -22,9 +22,10 @@ function buildFillValues(installation) {
   const p   = installation.products || {};
   const pcf = p.custom_fields || {};   // fallback: read keys from product if not on installation
   return {
-    // From main installation columns (fall back to product's custom_fields for keys)
-    customer_name:     installation.customer_name || "",
     install_date:      installation.installation_date?.split("T")[0] || "",
+    // Department Name — from installation CF first, then product CF
+    department_name:
+      cf.department_name || pcf.department_name || installation.customer_name || "",
     win_key:
       installation.windows_key   || cf.windows_key   || cf.Windows_Key   || cf.window_key   ||
       pcf.windows_key            || pcf.Windows_Key  || pcf.window_key   || "",
@@ -32,37 +33,42 @@ function buildFillValues(installation) {
       installation.ms_office_key || cf.ms_office_key || cf.MS_Office_Key || cf.office_key   || cf.Office_Key ||
       pcf.ms_office_key          || pcf.MS_Office_Key || pcf.office_key  || pcf.Office_Key  || "",
     av_key:
-      installation.antivirus_key || cf.antivirus_key || cf.Antivirus_Key || cf.antivirus    ||
-      pcf.antivirus_key          || pcf.Antivirus_Key || pcf.antivirus   || "",
+      installation.antivirus_key    || cf.antivirus_key    || cf.Antivirus_Key || cf.antivirus ||
+      pcf.antivirus_serial_key      || pcf.antivirus_key   || pcf.Antivirus_Key || pcf.antivirus || "",
     eng_name:          installation.installer_name || "",
     // From product (read-only — never written back)
     mc_serial:         p.serial_number || "",
     model_no:          p.name || "",
     device_brand:      p.brand || "",
-    // From custom_fields — PC address / specs
-    address:           cf.address || "",
-    state:             cf.state || "",
-    pin:               cf.pin || "",
-    tel_no:            cf.tel_no || "",
-    email:             cf.email || "",
-    contact_person:    cf.contact_person || "",
-    proc_ram_ssd:      cf.proc_ram_ssd || "i5/8GB/512GB",
-    win_version:       cf.win_version || "",
-    office_version:    cf.office_version || "",
-    av_name:           cf.av_name || "",
-    av_validity:       cf.av_validity || "",
+    // Address / contact — fall back to product CF for older records
+    address:           cf.address       || pcf.address    || "",
+    state:             cf.state         || "",
+    pin:               cf.pin           || "",
+    tel_no:            cf.tel_no        || cf.mobile_no   || pcf.tel_no    || pcf.mobile_no  || "",
+    email:             cf.email         || cf.email_id    || pcf.email     || pcf.email_id   || "",
+    contact_person:    cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "",
+    room_no:           cf.room_no       || pcf.room_no    || "",
+    proc_ram_ssd:      cf.proc_ram_ssd  || "i5/8GB/512GB",
+    // Software versions — fall back to product CF keys
+    win_version:
+      cf.win_version    || cf.windows_version    || pcf.win_version    || pcf.windows_version    || "",
+    office_version:
+      cf.office_version || cf.ms_office_version  || pcf.office_version || pcf.ms_office_version  || "",
+    av_name:
+      cf.av_name        || cf.antivirus_name      || pcf.av_name       || pcf.antivirus_name      || "",
+    av_validity:
+      cf.av_validity    || cf.antivirus_validity  || pcf.av_validity   || pcf.antivirus_validity  || "",
     eng_code:          cf.eng_code || "",
     // HP report — activation status
-    win_activation:    cf.win_activation || "",
+    win_activation:    cf.win_activation    || "",
     office_activation: cf.office_activation || "",
-    av_activation:     cf.av_activation || "",
+    av_activation:     cf.av_activation     || "",
     // HP report — extra fields
     hw_serial_key:     cf.hw_serial_key || "",
-    room_no:           cf.room_no || "",
-    remarks:           cf.remarks || "",
-    service_date:      cf.service_date || "",
-    cust_signing:      cf.cust_signing || "",
-    // Installation checklist (c1–c7) and training (t1–t7)
+    remarks:           cf.remarks       || "",
+    service_date:      cf.service_date  || new Date().toISOString().split("T")[0],
+    cust_signing:      cf.cust_signing  || "",
+    // Installation checklist (c1–c7)
     c1: cf.c1 || "", c2: cf.c2 || "", c3: cf.c3 || "",
     c4: cf.c4 || "", c5: cf.c5 || "", c6: cf.c6 || "", c7: cf.c7 || "",
     t1: cf.t1 || "", t2: cf.t2 || "", t3: cf.t3 || "",
@@ -90,7 +96,12 @@ export default function InstallationReportView({ installation, branchName }) {
   const [error,  setError]          = useState(null);
 
   function handleFill(id, val) {
-    setFillValues((prev) => ({ ...prev, [id]: val }));
+    setFillValues((prev) => {
+      const next = { ...prev, [id]: val };
+      // Keep Name of User and User Name (signing line) in sync
+      if (id === "contact_person") next.cust_signing = val;
+      return next;
+    });
     setSaved(false);
     setError(null);
   }
@@ -102,21 +113,24 @@ export default function InstallationReportView({ installation, branchName }) {
       const { error: dbError } = await supabase
         .from("installations")
         .update({
-          customer_name:     fillValues.customer_name  || null,
-          installer_name:    fillValues.eng_name       || null,
-          installation_date: fillValues.install_date   || null,
-          windows_key:       fillValues.win_key        || null,
-          ms_office_key:     fillValues.office_key     || null,
-          antivirus_key:     fillValues.av_key         || null,
+          installer_name:    fillValues.eng_name    || null,
+          installation_date: fillValues.install_date || null,
+          windows_key:       fillValues.win_key     || null,
+          ms_office_key:     fillValues.office_key  || null,
+          antivirus_key:     fillValues.av_key      || null,
           custom_fields: {
-            // PC address / specs
+            // PC identity
+            department_name:   fillValues.department_name,
+            // PC address / contact
             address:           fillValues.address,
             state:             fillValues.state,
             pin:               fillValues.pin,
             tel_no:            fillValues.tel_no,
             email:             fillValues.email,
             contact_person:    fillValues.contact_person,
+            room_no:           fillValues.room_no,
             proc_ram_ssd:      fillValues.proc_ram_ssd,
+            // Software versions
             win_version:       fillValues.win_version,
             office_version:    fillValues.office_version,
             av_name:           fillValues.av_name,
@@ -128,11 +142,10 @@ export default function InstallationReportView({ installation, branchName }) {
             av_activation:     fillValues.av_activation,
             // Extra
             hw_serial_key:     fillValues.hw_serial_key,
-            room_no:           fillValues.room_no,
             remarks:           fillValues.remarks,
             service_date:      fillValues.service_date,
             cust_signing:      fillValues.cust_signing,
-            // Checklists
+            // Checklist
             c1: fillValues.c1, c2: fillValues.c2, c3: fillValues.c3,
             c4: fillValues.c4, c5: fillValues.c5, c6: fillValues.c6, c7: fillValues.c7,
             t1: fillValues.t1, t2: fillValues.t2, t3: fillValues.t3,

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { getOrgId } from "@/utils/getOrgId";
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, orgId } = await getOrgId();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { data, error } = await supabase
@@ -17,13 +18,13 @@ export async function GET() {
 
 export async function POST(request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, orgId } = await getOrgId();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const { data, error } = await supabase
     .from("categories")
-    .insert({ name: body.name, user_id: user.id })
+    .insert({ name: body.name, organization_id: orgId })
     .select()
     .single();
 

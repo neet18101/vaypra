@@ -68,6 +68,12 @@ export default async function LoginPage({ searchParams }) {
           >
             Sign In
           </button>
+
+          <div className="text-center">
+            <Link href="/forgot-password" className="text-xs text-[#9699B0] hover:text-[#6C5CE7] transition-colors">
+              Forgot your password?
+            </Link>
+          </div>
         </form>
 
         <p className="text-center text-sm text-[#9699B0]">

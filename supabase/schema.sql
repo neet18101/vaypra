@@ -18,6 +18,9 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles enable row level security;
+drop policy if exists "Users can view own profile" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
@@ -46,6 +49,10 @@ create table if not exists public.categories (
 );
 
 alter table public.categories enable row level security;
+drop policy if exists "Users can view own categories" on public.categories;
+drop policy if exists "Users can insert own categories" on public.categories;
+drop policy if exists "Users can update own categories" on public.categories;
+drop policy if exists "Users can delete own categories" on public.categories;
 create policy "Users can view own categories" on public.categories for select using (auth.uid() = user_id);
 create policy "Users can insert own categories" on public.categories for insert with check (auth.uid() = user_id);
 create policy "Users can update own categories" on public.categories for update using (auth.uid() = user_id);
@@ -69,12 +76,16 @@ create table if not exists public.products (
 );
 
 alter table public.products enable row level security;
+drop policy if exists "Users can view own products" on public.products;
+drop policy if exists "Users can insert own products" on public.products;
+drop policy if exists "Users can update own products" on public.products;
+drop policy if exists "Users can delete own products" on public.products;
 create policy "Users can view own products" on public.products for select using (auth.uid() = user_id);
 create policy "Users can insert own products" on public.products for insert with check (auth.uid() = user_id);
 create policy "Users can update own products" on public.products for update using (auth.uid() = user_id);
 create policy "Users can delete own products" on public.products for delete using (auth.uid() = user_id);
 
--- 3. Customers
+-- 4. Customers
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -89,12 +100,16 @@ create table if not exists public.customers (
 );
 
 alter table public.customers enable row level security;
+drop policy if exists "Users can view own customers" on public.customers;
+drop policy if exists "Users can insert own customers" on public.customers;
+drop policy if exists "Users can update own customers" on public.customers;
+drop policy if exists "Users can delete own customers" on public.customers;
 create policy "Users can view own customers" on public.customers for select using (auth.uid() = user_id);
 create policy "Users can insert own customers" on public.customers for insert with check (auth.uid() = user_id);
 create policy "Users can update own customers" on public.customers for update using (auth.uid() = user_id);
 create policy "Users can delete own customers" on public.customers for delete using (auth.uid() = user_id);
 
--- 4. Invoices
+-- 5. Invoices
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -110,12 +125,16 @@ create table if not exists public.invoices (
 );
 
 alter table public.invoices enable row level security;
+drop policy if exists "Users can view own invoices" on public.invoices;
+drop policy if exists "Users can insert own invoices" on public.invoices;
+drop policy if exists "Users can update own invoices" on public.invoices;
+drop policy if exists "Users can delete own invoices" on public.invoices;
 create policy "Users can view own invoices" on public.invoices for select using (auth.uid() = user_id);
 create policy "Users can insert own invoices" on public.invoices for insert with check (auth.uid() = user_id);
 create policy "Users can update own invoices" on public.invoices for update using (auth.uid() = user_id);
 create policy "Users can delete own invoices" on public.invoices for delete using (auth.uid() = user_id);
 
--- 5. Installments
+-- 6. Installments
 create table if not exists public.installments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -132,12 +151,16 @@ create table if not exists public.installments (
 );
 
 alter table public.installments enable row level security;
+drop policy if exists "Users can view own installments" on public.installments;
+drop policy if exists "Users can insert own installments" on public.installments;
+drop policy if exists "Users can update own installments" on public.installments;
+drop policy if exists "Users can delete own installments" on public.installments;
 create policy "Users can view own installments" on public.installments for select using (auth.uid() = user_id);
 create policy "Users can insert own installments" on public.installments for insert with check (auth.uid() = user_id);
 create policy "Users can update own installments" on public.installments for update using (auth.uid() = user_id);
 create policy "Users can delete own installments" on public.installments for delete using (auth.uid() = user_id);
 
--- 6. Branches
+-- 7. Branches
 create table if not exists public.branches (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -151,12 +174,16 @@ create table if not exists public.branches (
 );
 
 alter table public.branches enable row level security;
+drop policy if exists "Users can view own branches" on public.branches;
+drop policy if exists "Users can insert own branches" on public.branches;
+drop policy if exists "Users can update own branches" on public.branches;
+drop policy if exists "Users can delete own branches" on public.branches;
 create policy "Users can view own branches" on public.branches for select using (auth.uid() = user_id);
 create policy "Users can insert own branches" on public.branches for insert with check (auth.uid() = user_id);
 create policy "Users can update own branches" on public.branches for update using (auth.uid() = user_id);
 create policy "Users can delete own branches" on public.branches for delete using (auth.uid() = user_id);
 
--- 7. AI Insights (seeded/static)
+-- 8. AI Insights (seeded/static)
 create table if not exists public.ai_insights (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
@@ -169,10 +196,12 @@ create table if not exists public.ai_insights (
 );
 
 alter table public.ai_insights enable row level security;
+drop policy if exists "Users can view own insights" on public.ai_insights;
+drop policy if exists "Users can insert own insights" on public.ai_insights;
 create policy "Users can view own insights" on public.ai_insights for select using (auth.uid() = user_id);
 create policy "Users can insert own insights" on public.ai_insights for insert with check (auth.uid() = user_id);
 
--- 8. Dispatches (batch header)
+-- 9. Dispatches (batch header)
 create table if not exists public.dispatches (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -189,12 +218,16 @@ create table if not exists public.dispatches (
 );
 
 alter table public.dispatches enable row level security;
+drop policy if exists "Users can view own dispatches" on public.dispatches;
+drop policy if exists "Users can insert own dispatches" on public.dispatches;
+drop policy if exists "Users can update own dispatches" on public.dispatches;
+drop policy if exists "Users can delete own dispatches" on public.dispatches;
 create policy "Users can view own dispatches" on public.dispatches for select using (auth.uid() = user_id);
 create policy "Users can insert own dispatches" on public.dispatches for insert with check (auth.uid() = user_id);
 create policy "Users can update own dispatches" on public.dispatches for update using (auth.uid() = user_id);
 create policy "Users can delete own dispatches" on public.dispatches for delete using (auth.uid() = user_id);
 
--- 9. Dispatch Items (line items per product)
+-- 10. Dispatch Items (line items per product)
 create table if not exists public.dispatch_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -205,12 +238,16 @@ create table if not exists public.dispatch_items (
 );
 
 alter table public.dispatch_items enable row level security;
+drop policy if exists "Users can view own dispatch_items" on public.dispatch_items;
+drop policy if exists "Users can insert own dispatch_items" on public.dispatch_items;
+drop policy if exists "Users can update own dispatch_items" on public.dispatch_items;
+drop policy if exists "Users can delete own dispatch_items" on public.dispatch_items;
 create policy "Users can view own dispatch_items" on public.dispatch_items for select using (auth.uid() = user_id);
 create policy "Users can insert own dispatch_items" on public.dispatch_items for insert with check (auth.uid() = user_id);
 create policy "Users can update own dispatch_items" on public.dispatch_items for update using (auth.uid() = user_id);
 create policy "Users can delete own dispatch_items" on public.dispatch_items for delete using (auth.uid() = user_id);
 
--- 10. Installations (per-product installation record)
+-- 11. Installations (per-product installation record)
 create table if not exists public.installations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -231,12 +268,16 @@ create table if not exists public.installations (
 );
 
 alter table public.installations enable row level security;
+drop policy if exists "Users can view own installations" on public.installations;
+drop policy if exists "Users can insert own installations" on public.installations;
+drop policy if exists "Users can update own installations" on public.installations;
+drop policy if exists "Users can delete own installations" on public.installations;
 create policy "Users can view own installations" on public.installations for select using (auth.uid() = user_id);
 create policy "Users can insert own installations" on public.installations for insert with check (auth.uid() = user_id);
 create policy "Users can update own installations" on public.installations for update using (auth.uid() = user_id);
 create policy "Users can delete own installations" on public.installations for delete using (auth.uid() = user_id);
 
--- 11. Print Templates
+-- 12. Print Templates
 create table if not exists public.print_templates (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -257,6 +298,10 @@ create table if not exists public.print_templates (
 );
 
 alter table public.print_templates enable row level security;
+drop policy if exists "Users can view own print_templates" on public.print_templates;
+drop policy if exists "Users can insert own print_templates" on public.print_templates;
+drop policy if exists "Users can update own print_templates" on public.print_templates;
+drop policy if exists "Users can delete own print_templates" on public.print_templates;
 create policy "Users can view own print_templates" on public.print_templates for select using (auth.uid() = user_id);
 create policy "Users can insert own print_templates" on public.print_templates for insert with check (auth.uid() = user_id);
 create policy "Users can update own print_templates" on public.print_templates for update using (auth.uid() = user_id);

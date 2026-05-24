@@ -63,18 +63,23 @@ export default function CustomersContent({ customers }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase.from("customers").insert({
-        user_id: user.id,
-        name: form.name,
-        phone: form.phone,
-        email: form.email,
-        balance: Number(form.balance),
-        loyalty_tier: form.loyalty_tier,
-        total_orders: Number(form.total_orders),
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          balance: Number(form.balance),
+          loyalty_tier: form.loyalty_tier,
+          total_orders: Number(form.total_orders),
+        }),
       });
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Failed to add customer: " + err.error);
+        return;
+      }
       setShowModal(false);
       setForm({ name: "", phone: "", email: "", balance: "", loyalty_tier: "Silver", total_orders: "" });
       router.refresh();
@@ -84,11 +89,7 @@ export default function CustomersContent({ customers }) {
   };
 
   const handleCSVImport = async (rows) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
     const mapped = rows.map(r => ({
-      user_id: user.id,
       name: r.name || "",
       phone: r.phone || "",
       email: r.email || "",
@@ -96,8 +97,17 @@ export default function CustomersContent({ customers }) {
       loyalty_tier: r.loyalty_tier || "Bronze",
       total_orders: parseInt(r.total_orders) || 0,
     }));
-    const { error } = await supabase.from("customers").insert(mapped);
-    if (error) throw new Error(error.message);
+    for (const row of mapped) {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+    }
     router.refresh();
     return mapped.length;
   };

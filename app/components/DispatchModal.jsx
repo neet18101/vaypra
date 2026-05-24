@@ -49,10 +49,12 @@ export default function DispatchModal({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: branchProfile } = await supabase.from("profiles").select("current_organization_id").eq("id", user.id).single();
+      const branchOrgId = branchProfile?.current_organization_id;
 
       const { data: newBranch, error } = await supabase
         .from("branches")
-        .insert({ name: newBranchName.trim(), user_id: user.id })
+        .insert({ name: newBranchName.trim(), organization_id: branchOrgId })
         .select()
         .single();
 
@@ -85,12 +87,14 @@ export default function DispatchModal({
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      const { data: dispProfile } = await supabase.from("profiles").select("current_organization_id").eq("id", user.id).single();
+      const dispOrgId = dispProfile?.current_organization_id;
 
       // 1. Insert dispatch
       const { data: dispatch, error: dispatchError } = await supabase
         .from("dispatches")
         .insert({
-          user_id: user.id,
+          organization_id: dispOrgId,
           dispatch_number: dispatchNumber,
           dispatched_by: dispatchedByName.trim(),
           dispatched_by_mobile: dispatchedByMobile.trim() || null,
@@ -106,7 +110,7 @@ export default function DispatchModal({
 
       // 2. Insert dispatch items
       const dispatchItems = selectedIds.map((productId) => ({
-        user_id: user.id,
+        organization_id: dispOrgId,
         dispatch_id: dispatch.id,
         product_id: productId,
         status: "dispatched",

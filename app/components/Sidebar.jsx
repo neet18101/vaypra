@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, FileText, Package, Users,
   Globe, GitBranch, Brain, BarChart3, Settings, Zap, LogOut,
-  Truck, Wrench, UserCog,
+  /* Truck, */ Wrench, UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,14 +13,14 @@ const adminNav = [
   { id: "dashboard",      label: "Dashboard",       icon: LayoutDashboard, href: "/dashboard" },
   { id: "invoices",       label: "Invoices & Billing", icon: FileText,      href: "/invoices" },
   { id: "inventory",      label: "Inventory",        icon: Package,         href: "/inventory" },
-  { id: "dispatches",     label: "Dispatches",       icon: Truck,           href: "/dispatches" },
+  // { id: "dispatches",     label: "Dispatches",       icon: Truck,           href: "/dispatches" }, // DISABLED
   { id: "installations",  label: "Installations",    icon: Wrench,          href: "/installations" },
-  { id: "customers",      label: "Customers & CRM",  icon: Users,           href: "/customers" },
-  { id: "ecommerce",      label: "Online Store",     icon: Globe,           href: "/ecommerce" },
-  { id: "branches",       label: "Multi-Branch",     icon: GitBranch,       href: "/branches" },
-  { id: "ai-insights",    label: "AI Insights",      icon: Brain,           href: "/ai-insights" },
-  { id: "reports",        label: "Reports & GST",    icon: BarChart3,       href: "/reports" },
-  { id: "team",           label: "Team",             icon: UserCog,         href: "/team" },
+  // { id: "customers",      label: "Customers & CRM",  icon: Users,           href: "/customers" },
+  // { id: "ecommerce",      label: "Online Store",     icon: Globe,           href: "/ecommerce" },
+  // { id: "branches",       label: "Multi-Branch",     icon: GitBranch,       href: "/branches" },
+  // { id: "ai-insights",    label: "AI Insights",      icon: Brain,           href: "/ai-insights" },
+  // { id: "reports",        label: "Reports & GST",    icon: BarChart3,       href: "/reports" },
+  // { id: "team",           label: "Team",             icon: UserCog,         href: "/team" },
   { id: "settings",       label: "Settings",         icon: Settings,        href: "/settings" },
 ];
 

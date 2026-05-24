@@ -26,6 +26,7 @@ const formatCurrency = (amount) => {
 const emptyForm = {
   name: "",
   manager: "",
+  address: "",
   revenue: "",
   orders: "",
   status: "active",
@@ -44,21 +45,23 @@ export default function BranchesContent({ branches }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase.from("branches").insert({
-        user_id: user.id,
-        name: form.name,
-        manager: form.manager,
-        revenue: Number(form.revenue) || 0,
-        orders: Number(form.orders) || 0,
-        status: form.status,
+      const res = await fetch("/api/branches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          manager: form.manager,
+          address: form.address,
+          revenue: Number(form.revenue) || 0,
+          orders: Number(form.orders) || 0,
+          status: form.status,
+        }),
       });
-
-      if (error) throw error;
-
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Failed to add branch: " + err.error);
+        return;
+      }
       setShowModal(false);
       setForm(emptyForm);
       router.refresh();
@@ -113,6 +116,11 @@ export default function BranchesContent({ branches }) {
                     <p className="text-sm text-gray-500 ml-[26px]">
                       {branch.manager}
                     </p>
+                    {branch.address && (
+                      <p className="text-xs text-gray-400 ml-[26px] mt-0.5">
+                        {branch.address}
+                      </p>
+                    )}
                   </div>
                   <StatusBadge status={branch.status} />
                 </div>
@@ -194,6 +202,21 @@ export default function BranchesContent({ branches }) {
                   onChange={handleChange}
                   className="bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] w-full outline-none focus:border-[#6C5CE7]"
                   placeholder="Enter manager name"
+                />
+              </div>
+
+              {/* Address - full width */}
+              <div>
+                <label className="block text-xs font-medium text-[#9699B0] mb-1.5">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  className="bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] w-full outline-none focus:border-[#6C5CE7]"
+                  placeholder="Enter branch address"
                 />
               </div>
 

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { getOrgId } from "@/utils/getOrgId";
 
 export async function PUT(request, { params }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, orgId } = await getOrgId();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
@@ -12,7 +13,7 @@ export async function PUT(request, { params }) {
     .from("products")
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("organization_id", orgId)
     .select()
     .single();
 
@@ -22,15 +23,22 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, orgId } = await getOrgId();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+
+  // Unlink any installations that reference this product so they are preserved
+  await supabase
+    .from("installations")
+    .update({ product_id: null })
+    .eq("product_id", id);
+
   const { error } = await supabase
     .from("products")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("organization_id", orgId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
