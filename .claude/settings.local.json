@@ -8,7 +8,8 @@
       "Bash(identify /Users/gadgetzone/Desktop/vaypra/public/icon.png)",
       "Bash(python3 -c \"from PIL import Image; img=Image.open\\('/Users/gadgetzone/Desktop/vaypra/public/icon.png'\\); print\\(img.size\\)\")",
       "Bash(sips -g pixelWidth -g pixelHeight /Users/gadgetzone/Desktop/vaypra/public/icon.png)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/installations/ac6f25a5-adb2-4c3f-84e4-3af13172150b)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/installations/ac6f25a5-adb2-4c3f-84e4-3af13172150b)",
+      "WebFetch(domain:rangayancreations.com)"
     ]
   }
 }

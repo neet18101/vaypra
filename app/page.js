@@ -1,153 +1,212 @@
 import Link from "next/link";
+import {
+  Monitor, Printer, Package, FileText, Truck, CreditCard, Users,
+  ChevronRight, Zap, BarChart3, Shield, Clock,
+} from "lucide-react";
+
+const NAV = ["Features", "Reports", "Inventory", "Contact"];
 
 const FEATURES = [
-  { icon: "🖨️", color: "#00B4C8", title: "Installation Reports",  desc: "PC, printer & device installation reports with A4 print output." },
-  { icon: "📦", color: "#06C990", title: "Inventory Management",  desc: "Track products by serial number, category and branch." },
-  { icon: "🧾", color: "#FF7B24", title: "Invoicing & GST",        desc: "GST-ready sales and purchase invoices with customer history." },
-  { icon: "🚚", color: "#F72585", title: "Dispatch Tracking",      desc: "Batch shipping with delivery status tracking." },
-  { icon: "💳", color: "#7B2FBE", title: "Installment Plans",      desc: "EMI and payment plan management for customers." },
-  { icon: "👥", color: "#FFB300", title: "Team Management",        desc: "Role-based access for admins, engineers and viewers." },
+  { icon: Printer,    color: "#0066CC", bg: "#E8F1FB", title: "Installation Reports",   desc: "PC, printer & device installation reports with A4 print and digital sign-off." },
+  { icon: Package,    color: "#E65C00", bg: "#FEF0E6", title: "Inventory Management",   desc: "Real-time stock tracking by serial, category and branch with CSV import." },
+  { icon: FileText,   color: "#00875A", bg: "#E3F6EE", title: "GST Invoicing",           desc: "GST-ready sales & purchase invoices with full customer history." },
+  { icon: Truck,      color: "#6554C0", bg: "#EEE9FF", title: "Dispatch Tracking",       desc: "Batch shipments with live status. Linked directly to installations." },
+  { icon: CreditCard, color: "#0066CC", bg: "#E8F1FB", title: "Installment Plans",       desc: "EMI & payment plan management tied to customer invoices." },
+  { icon: Users,      color: "#E65C00", bg: "#FEF0E6", title: "Team Management",         desc: "Role-based access for admins, engineers and viewers across branches." },
+];
+
+const STATS = [
+  { icon: BarChart3, value: "Multi-Branch", label: "Business Operations" },
+  { icon: Shield,    value: "GST Ready",    label: "Tax Compliant" },
+  { icon: Zap,       value: "Real-Time",    label: "Stock Updates" },
+  { icon: Clock,     value: "A4 Print",     label: "Instant Reports" },
 ];
 
 export default function Home() {
   return (
-    <div style={{ fontFamily: "var(--font-body)", background: "#fff", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", background: "#fff", color: "#1a2332", minHeight: "100vh" }}>
 
-      {/* ── NAV ── */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 5%", height: 66,
-        borderBottom: "1px solid #E2E4F0",
-        position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)",
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        a { text-decoration: none; }
+        .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,102,204,0.15); }
+        .nav-link { font-size: 13.5px; font-weight: 600; color: #4A5568; transition: color 0.15s; text-decoration: none; }
+        .nav-link:hover { color: #0066CC; }
+      `}</style>
+
+      {/* ── NAVBAR ── */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 100,
+        background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid #E8EDF5",
+        boxShadow: "0 1px 0 #E8EDF5",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/logo.png" alt="logo" style={{ height: 38, objectFit: "contain" }} />
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#0D1B2A", fontFamily: "var(--font-display)" }}>
-            Rangayan Kitaab
-          </span>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", height: 66, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+
+          {/* Brand mark */}
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10,
+              background: "linear-gradient(135deg, #0066CC, #004499)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 3px 10px rgba(0,102,204,0.35)",
+            }}>
+              <Monitor size={20} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#0D1F3C", lineHeight: 1.1 }}>Rangayan Kitaab</div>
+              <div style={{ fontSize: 9.5, color: "#8A9BB0", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>By Rangayan Creations</div>
+            </div>
+          </div>
+
+          {/* Nav links */}
+          <nav style={{ display: "flex", gap: 32 }}>
+            {NAV.map((item) => (
+              <a key={item} href="#features" className="nav-link">{item}</a>
+            ))}
+          </nav>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <Link href="/login" style={{
+              padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+              color: "#0066CC", border: "1.5px solid #C2D9F5", background: "#F0F7FF",
+            }}>Sign In</Link>
+            <Link href="/signup" style={{
+              padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+              color: "#fff", background: "linear-gradient(135deg, #0066CC, #004FA3)",
+              boxShadow: "0 3px 12px rgba(0,102,204,0.35)",
+            }}>Get Started</Link>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link href="/login" style={{
-            padding: "8px 20px", borderRadius: 9, fontSize: 13, fontWeight: 600,
-            color: "#2D3436", textDecoration: "none", border: "1.5px solid #E2E4F0",
-          }}>Sign In</Link>
-          <Link href="/signup" style={{
-            padding: "8px 20px", borderRadius: 9, fontSize: 13, fontWeight: 700,
-            color: "#fff", textDecoration: "none",
-            background: "linear-gradient(135deg, #00B4C8, #0090A8)",
-            boxShadow: "0 3px 10px rgba(0,180,200,0.3)",
-          }}>Get Started</Link>
-        </div>
-      </nav>
+      </header>
 
       {/* ── HERO ── */}
       <section style={{
-        padding: "80px 5% 72px",
-        textAlign: "center",
-        background: "linear-gradient(180deg, #F0FCFE 0%, #fff 100%)",
-        borderBottom: "1px solid #E2E4F0",
-        position: "relative",
-        overflow: "hidden",
+        background: "linear-gradient(160deg, #F0F7FF 0%, #EFF1F7 50%, #FFF8F3 100%)",
+        padding: "90px 24px 80px",
+        position: "relative", overflow: "hidden",
+        borderBottom: "1px solid #E8EDF5",
       }}>
-        {/* top colour strip */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg,#F72585,#FF7B24,#FFB300,#06C990,#00B4C8,#7B2FBE)" }} />
+        {/* Decorative shapes */}
+        <div style={{ position:"absolute", top:-120, right:-80, width:420, height:420, borderRadius:"50%", background:"radial-gradient(circle, rgba(0,102,204,0.07), transparent 70%)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", bottom:-80, left:-60, width:320, height:320, borderRadius:"50%", background:"radial-gradient(circle, rgba(230,92,0,0.06), transparent 70%)", pointerEvents:"none" }} />
 
-        <img
-          src="/logo.png"
-          alt="Rangayan Creations"
-          style={{ height: 96, objectFit: "contain", marginBottom: 24, filter: "drop-shadow(0 4px 20px rgba(0,180,200,0.25))" }}
-        />
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
 
-        <div style={{
-          display: "inline-block", background: "#E6F9FB", color: "#0090A8",
-          fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-          padding: "5px 14px", borderRadius: 99, marginBottom: 20,
-        }}>
-          Business Management Platform
-        </div>
+          {/* Icon badge */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: 18,
+              background: "linear-gradient(135deg, #0066CC, #004499)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 8px 28px rgba(0,102,204,0.3)",
+            }}>
+              <Monitor size={30} color="#fff" />
+            </div>
+          </div>
 
-        <h1 style={{
-          fontSize: "clamp(30px, 5vw, 52px)", fontWeight: 900,
-          color: "#0D1B2A", lineHeight: 1.15, margin: "0 auto 18px",
-          fontFamily: "var(--font-display)", maxWidth: 640,
-        }}>
-          Run Your Entire Business<br />
-          <span style={{ color: "#00B4C8" }}>From One Dashboard</span>
-        </h1>
+          {/* Pill badge */}
+          <div style={{ marginBottom: 22 }}>
+            <span style={{
+              display: "inline-block",
+              background: "linear-gradient(135deg, #E65C00, #FF7B24)",
+              color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em",
+              textTransform: "uppercase", padding: "5px 16px", borderRadius: 99,
+            }}>
+              Rangayan Creations — Business OS
+            </span>
+          </div>
 
-        <p style={{
-          fontSize: 16, color: "#6C6F87", maxWidth: 480,
-          margin: "0 auto 36px", lineHeight: 1.75,
-        }}>
-          Inventory, invoicing, installation reports, dispatch tracking and team management — built for Rangayan Creations.
-        </p>
-
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/login" style={{
-            padding: "13px 34px", borderRadius: 11, fontSize: 14, fontWeight: 700,
-            color: "#fff", textDecoration: "none",
-            background: "linear-gradient(135deg, #00B4C8, #0090A8)",
-            boxShadow: "0 6px 20px rgba(0,180,200,0.38)",
+          <h1 style={{
+            fontSize: "clamp(32px,5.5vw,58px)", fontWeight: 900, lineHeight: 1.1,
+            color: "#0D1F3C", marginBottom: 20, letterSpacing: "-0.02em",
           }}>
-            Sign In to Dashboard →
-          </Link>
-          <Link href="/signup" style={{
-            padding: "13px 34px", borderRadius: 11, fontSize: 14, fontWeight: 600,
-            color: "#0090A8", textDecoration: "none",
-            border: "1.5px solid #00B4C8",
-            background: "#fff",
-          }}>
-            Create Account
-          </Link>
+            Manage Your Entire Business<br />
+            <span style={{ background: "linear-gradient(135deg, #0066CC, #0095FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              From One Dashboard
+            </span>
+          </h1>
+
+          <p style={{ fontSize: 17, color: "#5A6E87", maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.8 }}>
+            Inventory tracking, GST invoicing, installation reports, dispatch management and team control — built for Rangayan Creations.
+          </p>
+
+          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+            <Link href="/login" className="hover-lift" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "14px 36px", borderRadius: 10, fontSize: 15, fontWeight: 700,
+              color: "#fff",
+              background: "linear-gradient(135deg, #0066CC 0%, #004FA3 100%)",
+              boxShadow: "0 6px 22px rgba(0,102,204,0.4)",
+            }}>
+              Open Dashboard <ChevronRight size={18} />
+            </Link>
+            <Link href="/signup" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "14px 36px", borderRadius: 10, fontSize: 15, fontWeight: 600,
+              color: "#0066CC", border: "2px solid #C2D9F5", background: "#fff",
+            }}>
+              Create Account
+            </Link>
+          </div>
+
+          {/* Trust bar */}
+          <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
+            {["✓ GST Compliant", "✓ Multi-Branch", "✓ A4 Print Reports", "✓ Secure & Fast"].map((item) => (
+              <span key={item} style={{ fontSize: 13, color: "#5A6E87", fontWeight: 600 }}>{item}</span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── STATS STRIP ── */}
-      <section style={{ background: "#0D1B2A", padding: "28px 5%" }}>
-        <div style={{
-          maxWidth: 840, margin: "0 auto",
-          display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 0, textAlign: "center",
-        }}>
-          {[
-            { v: "Multi-Branch", l: "Operations" },
-            { v: "GST Ready",    l: "Invoicing" },
-            { v: "A4 Print",     l: "Reports" },
-            { v: "Real-Time",    l: "Stock" },
-          ].map(({ v, l }, i) => (
-            <div key={l} style={{ padding: "8px 0", borderRight: i < 3 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#00B4C8", marginBottom: 2, fontFamily: "var(--font-display)" }}>{v}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.07em", textTransform: "uppercase" }}>{l}</div>
+      {/* ── STATS ── */}
+      <section style={{ background: "#0D1F3C", padding: "0" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+          {STATS.map(({ icon: Icon, value, label }, i) => (
+            <div key={label} style={{
+              padding: "28px 20px", textAlign: "center",
+              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.08)" : "none",
+            }}>
+              <Icon size={20} color="#4DA3FF" style={{ margin: "0 auto 10px", display: "block" }} />
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 3 }}>{value}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: "0.07em", textTransform: "uppercase", fontWeight: 600 }}>{label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ padding: "72px 5%", background: "#F8F9FE" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+      <section id="features" style={{ padding: "88px 24px", background: "#F7F9FC" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: "#00B4C8", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Features</p>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 900, color: "#0D1B2A", fontFamily: "var(--font-display)", marginBottom: 12 }}>
-              Everything in one place
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{
+              display: "inline-block", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
+              color: "#0066CC", textTransform: "uppercase", marginBottom: 12,
+              background: "#E8F1FB", padding: "4px 14px", borderRadius: 99,
+            }}>What's Inside</span>
+            <h2 style={{ fontSize: "clamp(24px,3.5vw,38px)", fontWeight: 900, color: "#0D1F3C", marginBottom: 12, letterSpacing: "-0.01em" }}>
+              Everything Your Team Needs
             </h2>
-            <p style={{ fontSize: 15, color: "#9699B0", maxWidth: 440, margin: "0 auto" }}>
-              No generic software. Built specifically for how Rangayan Creations works.
+            <p style={{ fontSize: 16, color: "#5A6E87", maxWidth: 450, margin: "0 auto", lineHeight: 1.75 }}>
+              No generic software. Purpose-built for how Rangayan Creations operates every day.
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))", gap: 16 }}>
-            {FEATURES.map(({ icon, color, title, desc }) => (
-              <div key={title} style={{
-                background: "#fff", borderRadius: 18, padding: "26px 22px",
-                border: "1px solid #E2E4F0",
-                boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 18 }}>
+            {FEATURES.map(({ icon: Icon, color, bg, title, desc }) => (
+              <div key={title} className="hover-lift" style={{
+                background: "#fff", borderRadius: 18, padding: "28px 24px",
+                border: "1.5px solid #E8EDF5",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
               }}>
-                <div style={{ fontSize: 28, marginBottom: 14 }}>{icon}</div>
-                <h3 style={{ fontSize: 14, fontWeight: 800, color: "#0D1B2A", marginBottom: 8, fontFamily: "var(--font-display)" }}>{title}</h3>
-                <p style={{ fontSize: 13, color: "#6C6F87", lineHeight: 1.65 }}>{desc}</p>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+                  <Icon size={23} color={color} />
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0D1F3C", marginBottom: 9 }}>{title}</h3>
+                <p style={{ fontSize: 13.5, color: "#6B7D93", lineHeight: 1.7 }}>{desc}</p>
                 <div style={{ marginTop: 18, height: 2, width: 40, borderRadius: 99, background: color }} />
               </div>
             ))}
@@ -157,24 +216,25 @@ export default function Home() {
 
       {/* ── CTA ── */}
       <section style={{
-        padding: "72px 5%", textAlign: "center",
-        background: "linear-gradient(135deg, #073B4C 0%, #00B4C8 100%)",
+        padding: "80px 24px", textAlign: "center",
+        background: "linear-gradient(135deg, #0D1F3C 0%, #0066CC 100%)",
         position: "relative", overflow: "hidden",
       }}>
-        <div style={{ position:"absolute", inset:0, opacity:0.05, backgroundImage:"radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize:"28px 28px", pointerEvents:"none" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <img src="/logo.png" alt="logo" style={{ height: 56, objectFit: "contain", marginBottom: 20, filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.2))" }} />
-          <h2 style={{ fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 900, color: "#fff", marginBottom: 10, fontFamily: "var(--font-display)" }}>
-            Ready to get started?
+        <div style={{ position:"absolute", inset:0, opacity:0.04, backgroundImage:"radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize:"28px 28px", pointerEvents:"none" }} />
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 520, margin: "0 auto" }}>
+          <div style={{ width: 60, height: 60, borderRadius: 16, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+            <Monitor size={28} color="#fff" />
+          </div>
+          <h2 style={{ fontSize: "clamp(22px,3vw,36px)", fontWeight: 900, color: "#fff", marginBottom: 12, letterSpacing: "-0.01em" }}>
+            Ready to Get Started?
           </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.72)", marginBottom: 30 }}>
-            Sign in and take control of your business today.
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", marginBottom: 32, lineHeight: 1.75 }}>
+            Sign in to Rangayan Kitaab and take full control of your business operations.
           </p>
-          <Link href="/login" style={{
-            display: "inline-block", padding: "13px 40px", borderRadius: 11,
-            fontSize: 14, fontWeight: 700, color: "#073B4C",
-            textDecoration: "none", background: "#fff",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
+          <Link href="/login" className="hover-lift" style={{
+            display: "inline-block", padding: "14px 44px", borderRadius: 10,
+            fontSize: 15, fontWeight: 700, color: "#0D1F3C",
+            background: "#fff", boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
           }}>
             Go to Dashboard →
           </Link>
@@ -182,18 +242,19 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{
-        background: "#0D1B2A",
-        padding: "24px 5%",
-        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/logo.png" alt="logo" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.5)" }} />
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>© 2025 Rangayan Creations Pvt. Ltd.</span>
-        </div>
-        <div style={{ display: "flex", gap: 20 }}>
-          <Link href="/login"  style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign In</Link>
-          <Link href="/signup" style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign Up</Link>
+      <footer style={{ background: "#0D1F3C", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "24px 32px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Monitor size={15} color="rgba(255,255,255,0.5)" />
+            </div>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>© 2025 Rangayan Creations Pvt. Ltd. All rights reserved.</span>
+          </div>
+          <div style={{ display: "flex", gap: 20 }}>
+            <Link href="/login"  style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>Sign In</Link>
+            <Link href="/signup" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>Sign Up</Link>
+            <a href="https://rangayancreations.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>Main Website</a>
+          </div>
         </div>
       </footer>
 
