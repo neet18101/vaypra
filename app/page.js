@@ -3,6 +3,8 @@ import {
   Monitor, Printer, Package, FileText, Truck, CreditCard, Users,
   ChevronRight, Zap, BarChart3, Shield, Clock,
 } from "lucide-react";
+import PwaInstall from "@/app/components/PwaInstall";
+import PwaInstallSection from "@/app/components/PwaInstallSection";
 
 const NAV = ["Features", "Reports", "Inventory", "Contact"];
 
@@ -34,6 +36,16 @@ export default function Home() {
         .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,102,204,0.15); }
         .nav-link { font-size: 13.5px; font-weight: 600; color: #4A5568; transition: color 0.15s; text-decoration: none; }
         .nav-link:hover { color: #0066CC; }
+        @media (max-width: 768px) {
+          .nav-desktop { display: none !important; }
+          .nav-brand-sub { display: none !important; }
+          .hero-trust { display: none !important; }
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .stats-grid > div:nth-child(2) { border-right: none !important; }
+          .footer-row { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .hero-ctas { flex-direction: column; align-items: center; }
+          .hero-ctas a { width: 100%; max-width: 320px; text-align: center; justify-content: center; }
+        }
       `}</style>
 
       {/* ── NAVBAR ── */}
@@ -57,12 +69,12 @@ export default function Home() {
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: "#0D1F3C", lineHeight: 1.1 }}>Rangayan Kitaab</div>
-              <div style={{ fontSize: 9.5, color: "#8A9BB0", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>By Rangayan Creations</div>
+              <div className="nav-brand-sub" style={{ fontSize: 9.5, color: "#8A9BB0", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>By Rangayan Creations</div>
             </div>
           </div>
 
-          {/* Nav links */}
-          <nav style={{ display: "flex", gap: 32 }}>
+          {/* Nav links — hidden on mobile */}
+          <nav className="nav-desktop" style={{ display: "flex", gap: 32 }}>
             {NAV.map((item) => (
               <a key={item} href="#features" className="nav-link">{item}</a>
             ))}
@@ -133,7 +145,7 @@ export default function Home() {
             Inventory tracking, GST invoicing, installation reports, dispatch management and team control — built for Rangayan Creations.
           </p>
 
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+          <div className="hero-ctas" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
             <Link href="/login" className="hover-lift" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "14px 36px", borderRadius: 10, fontSize: 15, fontWeight: 700,
@@ -152,8 +164,8 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Trust bar */}
-          <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
+          {/* Trust bar — hidden on mobile */}
+          <div className="hero-trust" style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap" }}>
             {["✓ GST Compliant", "✓ Multi-Branch", "✓ A4 Print Reports", "✓ Secure & Fast"].map((item) => (
               <span key={item} style={{ fontSize: 13, color: "#5A6E87", fontWeight: 600 }}>{item}</span>
             ))}
@@ -163,7 +175,7 @@ export default function Home() {
 
       {/* ── STATS ── */}
       <section style={{ background: "#0D1F3C", padding: "0" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+        <div className="stats-grid" style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
           {STATS.map(({ icon: Icon, value, label }, i) => (
             <div key={label} style={{
               padding: "28px 20px", textAlign: "center",
@@ -176,6 +188,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* ── PWA INSTALL SECTION ── */}
+      <PwaInstallSection />
 
       {/* ── FEATURES ── */}
       <section id="features" style={{ padding: "88px 24px", background: "#F7F9FC" }}>
@@ -241,9 +256,12 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── PWA Install prompt ── */}
+      <PwaInstall />
+
       {/* ── FOOTER ── */}
       <footer style={{ background: "#0D1F3C", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "24px 32px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div className="footer-row" style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Monitor size={15} color="rgba(255,255,255,0.5)" />

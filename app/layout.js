@@ -1,5 +1,6 @@
 import { DM_Sans, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import SwRegister from "@/app/components/SwRegister";
 
 const dmSans = DM_Sans({
   variable: "--font-display",
@@ -20,17 +21,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "Rangayan Creations",
-  description: "Installation & Business Management",
+  title: "Rangayan Kitaab",
+  description: "Business management dashboard for Rangayan Creations — inventory, invoicing, installations and more.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icon-192.png",
+    shortcut: "/icon-192.png",
+    apple: "/icon-192.png",
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Rangayan",
   },
 };
@@ -42,14 +43,15 @@ export default function RootLayout({ children }) {
       className={`${dmSans.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <head>
-        <meta name="theme-color" content="#6C5CE7" />
+        <meta name="theme-color" content="#0066CC" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Rangayan" />
-        <link rel="apple-touch-icon" href="/icon.png" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body)" }}>
+        <SwRegister />
         {children}
       </body>
     </html>
