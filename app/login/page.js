@@ -1,138 +1,197 @@
 import Link from "next/link";
 
 export default async function LoginPage({ searchParams }) {
-  const params = await searchParams;
+  const params  = await searchParams;
   const error   = params?.error;
   const message = params?.message;
 
   return (
-    <div className="flex min-h-screen">
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
 
-      {/* ── Left brand panel ── */}
+      {/* ══════════════════════════════════════
+          LEFT — Brand Panel
+      ══════════════════════════════════════ */}
       <div
-        className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 relative overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0090A8 0%, #00B4C8 40%, #00C9B8 70%, #06C990 100%)" }}
+        className="hidden lg:flex"
+        style={{
+          width: "52%",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden",
+          background: "linear-gradient(160deg, #0D1B2A 0%, #0B3A4A 35%, #005F73 65%, #00B4C8 100%)",
+        }}
       >
-        {/* decorative blobs */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -60, width: 260, height: 260, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ position: "absolute", top: "40%", left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(247,37,133,0.15)" }} />
+        {/* Rainbow petal blobs — matching the logo flower */}
+        <div style={{ position:"absolute", top:"-120px", right:"-80px",   width:380, height:380, borderRadius:"50%", background:"radial-gradient(circle, rgba(0,180,200,0.25) 0%, transparent 70%)" }} />
+        <div style={{ position:"absolute", bottom:"-100px", left:"-60px", width:340, height:340, borderRadius:"50%", background:"radial-gradient(circle, rgba(6,201,144,0.2) 0%, transparent 70%)" }} />
+        <div style={{ position:"absolute", top:"15%", left:"-50px",       width:220, height:220, borderRadius:"50%", background:"radial-gradient(circle, rgba(247,37,133,0.22) 0%, transparent 70%)" }} />
+        <div style={{ position:"absolute", bottom:"20%", right:"-30px",   width:180, height:180, borderRadius:"50%", background:"radial-gradient(circle, rgba(255,123,36,0.18) 0%, transparent 70%)" }} />
+        <div style={{ position:"absolute", top:"55%", left:"10%",         width:140, height:140, borderRadius:"50%", background:"radial-gradient(circle, rgba(123,47,190,0.2) 0%, transparent 70%)" }} />
 
-        <div className="relative z-10 text-center">
+        {/* Subtle dot grid */}
+        <div style={{
+          position: "absolute", inset: 0, opacity: 0.07,
+          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }} />
+
+        {/* Content */}
+        <div style={{ position:"relative", zIndex:10, textAlign:"center", padding:"0 48px", maxWidth:520 }}>
           <img
             src="/logo.png"
             alt="Rangayan Creations"
-            style={{ height: 100, objectFit: "contain", marginBottom: 28, filter: "drop-shadow(0 4px 24px rgba(0,0,0,0.18))" }}
+            style={{ height:110, objectFit:"contain", marginBottom:32, filter:"drop-shadow(0 8px 32px rgba(0,180,200,0.4))" }}
           />
-          <h1 style={{ fontSize: 32, fontWeight: 900, color: "#fff", letterSpacing: 1, marginBottom: 10, fontFamily: "var(--font-display)" }}>
+
+          <h1 style={{ fontSize:34, fontWeight:900, color:"#fff", letterSpacing:0.5, marginBottom:8, lineHeight:1.2, fontFamily:"var(--font-display)" }}>
             Rangayan Creations
           </h1>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.82)", maxWidth: 340, lineHeight: 1.7 }}>
-            All-in-one business dashboard — inventory, invoicing, installations, and more.
+          <p style={{ fontSize:14, color:"rgba(255,255,255,0.65)", marginBottom:40, lineHeight:1.8, letterSpacing:0.3 }}>
+            BUSINESS MANAGEMENT PLATFORM
           </p>
 
-          <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 40 }}>
+          {/* Feature list */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14, textAlign:"left", marginBottom:44 }}>
             {[
-              { label: "Installations", value: "Tracked" },
-              { label: "Invoices", value: "Managed" },
-              { label: "Inventory", value: "Live" },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ background: "rgba(255,255,255,0.15)", borderRadius: 14, padding: "12px 20px", backdropFilter: "blur(8px)" }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{value}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>{label}</div>
+              { icon:"📦", title:"Inventory Management",   desc:"Real-time stock tracking across branches" },
+              { icon:"🖨️", title:"Installation Records",   desc:"PC, printer & device installation reports" },
+              { icon:"📋", title:"Invoicing & Billing",    desc:"GST invoices with customer EMI plans" },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} style={{ display:"flex", alignItems:"flex-start", gap:14, background:"rgba(255,255,255,0.07)", borderRadius:14, padding:"13px 16px", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.1)" }}>
+                <span style={{ fontSize:20, flexShrink:0 }}>{icon}</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#fff", marginBottom:2 }}>{title}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", lineHeight:1.5 }}>{desc}</div>
+                </div>
               </div>
             ))}
           </div>
+
+          {/* Bottom rainbow bar */}
+          <div style={{ height:4, borderRadius:99, background:"linear-gradient(90deg, #F72585, #FF7B24, #FFB300, #06C990, #00B4C8, #7B2FBE)", opacity:0.8 }} />
         </div>
       </div>
 
-      {/* ── Right form panel ── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-[#F4F5FB]">
-        <div className="w-full max-w-[420px]">
+      {/* ══════════════════════════════════════
+          RIGHT — Form Panel
+      ══════════════════════════════════════ */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "32px 24px",
+        background: "#F4F5FB",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Subtle background rings */}
+        <div style={{ position:"absolute", top:"-100px", right:"-100px", width:400, height:400, borderRadius:"50%", background:"rgba(0,180,200,0.05)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", bottom:"-80px", left:"-80px",  width:320, height:320, borderRadius:"50%", background:"rgba(247,37,133,0.04)", pointerEvents:"none" }} />
+
+        <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:1 }}>
 
           {/* Mobile logo */}
-          <div className="flex justify-center mb-8 lg:hidden">
-            <img src="/logo.png" alt="Rangayan Creations" style={{ height: 60, objectFit: "contain" }} />
+          <div className="lg:hidden" style={{ display:"flex", justifyContent:"center", marginBottom:28 }}>
+            <img src="/logo.png" alt="Rangayan Creations" style={{ height:64, objectFit:"contain" }} />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-[#E2E4F0] p-8">
-            <div className="mb-7">
-              <h2 className="text-2xl font-extrabold text-[#2D3436] font-[var(--font-display)]">
-                Welcome back
+          {/* Card */}
+          <div style={{ background:"#fff", borderRadius:24, boxShadow:"0 8px 40px rgba(0,0,0,0.08)", border:"1px solid #E2E4F0", padding:"36px 36px 32px" }}>
+
+            {/* Colorful top accent bar */}
+            <div style={{ height:3, borderRadius:99, background:"linear-gradient(90deg, #00B4C8, #06C990, #F72585)", marginBottom:28 }} />
+
+            <div style={{ marginBottom:24 }}>
+              <h2 style={{ fontSize:24, fontWeight:900, color:"#2D3436", marginBottom:6, fontFamily:"var(--font-display)" }}>
+                Welcome back 👋
               </h2>
-              <p className="text-sm text-[#9699B0] mt-1">Sign in to your Rangayan account</p>
+              <p style={{ fontSize:13, color:"#9699B0" }}>
+                Sign in to your Rangayan account
+              </p>
             </div>
 
             {error && (
-              <div className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 border border-red-100">
+              <div style={{ marginBottom:20, background:"#FFF5F5", border:"1px solid #FED7D7", borderRadius:12, padding:"12px 16px", fontSize:13, color:"#C53030" }}>
                 {error}
               </div>
             )}
             {message && (
-              <div className="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 border border-emerald-100">
+              <div style={{ marginBottom:20, background:"#F0FFF4", border:"1px solid #C6F6D5", borderRadius:12, padding:"12px 16px", fontSize:13, color:"#276749" }}>
                 {message}
               </div>
             )}
 
-            <form action="/auth/sign-in" method="POST" className="space-y-5">
+            <form action="/auth/sign-in" method="POST" style={{ display:"flex", flexDirection:"column", gap:18 }}>
+
               <div>
-                <label htmlFor="email" className="block text-xs font-semibold text-[#9699B0] mb-1.5 uppercase tracking-wide">
-                  Email address
+                <label htmlFor="email" style={{ display:"block", fontSize:11, fontWeight:700, color:"#9699B0", marginBottom:7, textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                  Email Address
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
+                  id="email" name="email" type="email" required
                   placeholder="you@email.com"
-                  className="w-full rounded-xl border border-[#E2E4F0] bg-[#F8F9FE] px-4 py-3 text-[13.5px] text-[#2D3436] outline-none transition-colors"
-                  style={{ "--tw-ring-color": "#00B4C8" }}
-                  onFocus={(e) => { e.target.style.borderColor = "#00B4C8"; e.target.style.boxShadow = "0 0 0 3px rgba(0,180,200,0.12)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#E2E4F0"; e.target.style.boxShadow = "none"; }}
+                  className="w-full rounded-xl border border-[#E2E4F0] bg-[#F8F9FE] px-4 py-3 text-[13.5px] text-[#2D3436] outline-none transition-all focus:border-[#00B4C8] focus:ring-2 focus:ring-[#00B4C8]/20"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-[#9699B0] mb-1.5 uppercase tracking-wide">
-                  Password
-                </label>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                  <label htmlFor="password" style={{ fontSize:11, fontWeight:700, color:"#9699B0", textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                    Password
+                  </label>
+                  <Link href="/forgot-password" style={{ fontSize:12, color:"#00B4C8", textDecoration:"none", fontWeight:500 }}>
+                    Forgot?
+                  </Link>
+                </div>
                 <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
+                  id="password" name="password" type="password" required
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-[#E2E4F0] bg-[#F8F9FE] px-4 py-3 text-[13.5px] text-[#2D3436] outline-none transition-colors"
+                  className="w-full rounded-xl border border-[#E2E4F0] bg-[#F8F9FE] px-4 py-3 text-[13.5px] text-[#2D3436] outline-none transition-all focus:border-[#00B4C8] focus:ring-2 focus:ring-[#00B4C8]/20"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full rounded-xl py-3 text-white font-bold text-[14px] transition-all hover:opacity-90 hover:shadow-lg active:scale-[0.98]"
                 style={{
-                  background: "linear-gradient(135deg, #00B4C8, #0090A8)",
-                  boxShadow: "0 4px 16px rgba(0,180,200,0.35)",
+                  marginTop:4,
+                  width:"100%",
+                  padding:"13px 0",
+                  borderRadius:12,
+                  border:"none",
+                  cursor:"pointer",
+                  fontSize:14,
+                  fontWeight:700,
+                  color:"#fff",
+                  letterSpacing:0.3,
+                  background:"linear-gradient(135deg, #00C4D8 0%, #00B4C8 50%, #0090A8 100%)",
+                  boxShadow:"0 6px 20px rgba(0,180,200,0.4)",
                 }}
               >
-                Sign In
+                Sign In →
               </button>
 
-              <div className="text-center">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-[#9699B0] hover:text-[#00B4C8] transition-colors"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
             </form>
+
+            {/* Divider */}
+            <div style={{ display:"flex", alignItems:"center", gap:12, margin:"22px 0 20px" }}>
+              <div style={{ flex:1, height:1, background:"#E2E4F0" }} />
+              <span style={{ fontSize:11, color:"#C4C7DB", fontWeight:600 }}>RANGAYAN KITAAB</span>
+              <div style={{ flex:1, height:1, background:"#E2E4F0" }} />
+            </div>
+
+            <p style={{ textAlign:"center", fontSize:13, color:"#9699B0" }}>
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" style={{ color:"#00B4C8", fontWeight:700, textDecoration:"none" }}>
+                Sign Up
+              </Link>
+            </p>
           </div>
 
-          <p className="text-center text-sm text-[#9699B0] mt-5">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-semibold hover:underline" style={{ color: "#00B4C8" }}>
-              Sign Up
-            </Link>
+          <p style={{ textAlign:"center", fontSize:12, color:"#C4C7DB", marginTop:20 }}>
+            © 2025 Rangayan Creations Pvt. Ltd. All rights reserved.
           </p>
         </div>
       </div>
