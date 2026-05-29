@@ -3,28 +3,28 @@
 
 :root {
   /* ── Rangayan Creations brand palette (from rainbow-flower icon) ── */
-  --background: #F3F8F9;
-  --foreground: #1A2E35;
-  --primary: #00B4C8;        /* teal-cyan petal */
+  --background: #F4F5FB;
+  --foreground: #2D3436;
+  --primary: #00B4C8;
   --primary-light: #67E8F9;
   --primary-dark: #0090A8;
-  --secondary: #F72585;      /* hot-pink/magenta petal */
-  --accent: #FF7B24;         /* orange petal */
-  --success: #06C990;        /* green petal */
-  --warning: #FFB300;        /* yellow-orange petal */
-  --danger: #EF4444;
-  --dark: #1A2E35;
-  --dark-alt: #0F1E24;
-  --gray-50: #F0F9FA;
-  --gray-100: #E2F2F5;
-  --gray-200: #C8E6EB;
-  --gray-300: #A0CCDA;
-  --gray-400: #72AAB8;
-  --gray-500: #4A8A9A;
-  --gray-600: #336A78;
-  --gray-700: #244E5A;
-  --gray-800: #17353F;
-  --gray-900: #0D2028;
+  --secondary: #F72585;
+  --accent: #FF7B24;
+  --success: #00B894;
+  --warning: #FDCB6E;
+  --danger: #E17055;
+  --dark: #2D3436;
+  --dark-alt: #1E272E;
+  --gray-50: #F8F9FE;
+  --gray-100: #F1F2F8;
+  --gray-200: #E2E4F0;
+  --gray-300: #C4C7DB;
+  --gray-400: #9699B0;
+  --gray-500: #6C6F87;
+  --gray-600: #4A4D64;
+  --gray-700: #353849;
+  --gray-800: #252836;
+  --gray-900: #1A1C2E;
 }
 
 @theme inline {
