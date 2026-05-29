@@ -42,10 +42,10 @@ export default function PwaInstallSection() {
       borderTop: "1px solid #E2ECF8",
       borderBottom: "1px solid #E2ECF8",
     }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", gap: 48, flexWrap: "wrap" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap", justifyContent: "center" }}>
 
         {/* Left — icon + heading */}
-        <div style={{ display: "flex", alignItems: "center", gap: 20, flex: 1, minWidth: 260 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, flex: 1, minWidth: 240 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20, overflow: "hidden",
             boxShadow: "0 8px 24px rgba(0,102,204,0.2)", flexShrink: 0,
