@@ -3,9 +3,10 @@
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, FileText, Package, Users,
-  Globe, GitBranch, Brain, BarChart3, Settings, Zap, LogOut,
+  Globe, GitBranch, Brain, BarChart3, Settings, LogOut,
   /* Truck, */ Wrench, UserCog,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -44,9 +45,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, userEma
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center py-5 border-b border-white/[0.06]">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE]">
-            <Zap size={18} color="#fff" />
-          </div>
+          <Image src="/icon.png" alt="Rangayan Creations" width={36} height={30} className="rounded object-contain" />
         </div>
 
         {/* Single nav item */}
@@ -103,13 +102,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, isMobile, userEma
         className="flex items-center gap-3 border-b border-white/[0.06]"
         style={{ padding: showLabels ? "24px 20px" : "24px 16px" }}
       >
-        <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE]">
-          <Zap size={20} color="#fff" />
+        <div className="w-[38px] h-[38px] flex items-center justify-center flex-shrink-0">
+          <Image src="/icon.png" alt="Rangayan Creations" width={38} height={32} className="rounded object-contain" />
         </div>
         {showLabels && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }}>
             <div className="text-lg font-extrabold text-white tracking-tight font-[var(--font-display)]">
-              BizFlow<span className="text-[#A29BFE]">Pro</span>
+              Rangayan <span className="text-[#A29BFE]">Kitaab</span>
             </div>
             <div className="text-[10px] text-white/40 font-medium tracking-widest uppercase">
               Business Suite

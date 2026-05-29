@@ -12,18 +12,49 @@ import {
   HP_TEMPLATE,
   printHpForm,
 } from "@/app/components/HpInstallReport";
+import {
+  PrinterInstallReport,
+  printPrinterForm,
+  MFP_TEMPLATE,
+  SCANNER_TEMPLATE,
+  PHOTOCOPIER_TEMPLATE,
+} from "@/app/components/PrinterInstallReport";
+import {
+  CanonPrinterReport,
+  printCanonForm,
+} from "@/app/components/CanonPrinterReport";
 import { printInstallation } from "@/app/components/InstallationModal";
 import StatusBadge from "@/app/components/StatusBadge";
 import Card from "@/app/components/Card";
 
-// ── Map DB row → HP form field values ────────────────────────────────────────
-function buildFillValues(installation) {
+// ── Category helpers ──────────────────────────────────────────────────────────
+
+function getDeviceType(category) {
+  switch ((category || "").toLowerCase()) {
+    case "single printer":         return "canon"
+    case "multi-function printer": return "mfp"
+    case "scanner":                return "mfp"
+    case "photocopier":            return "photocopier"
+    default:                       return null
+  }
+}
+
+function getPrinterTemplate(category) {
+  switch ((category || "").toLowerCase()) {
+    case "multi-function printer": return MFP_TEMPLATE
+    case "scanner":                return SCANNER_TEMPLATE
+    case "photocopier":            return PHOTOCOPIER_TEMPLATE
+    default:                       return MFP_TEMPLATE
+  }
+}
+
+// ── Map DB row → HP PC form field values ──────────────────────────────────────
+function buildPcFillValues(installation) {
   const cf  = installation.custom_fields || {};
   const p   = installation.products || {};
-  const pcf = p.custom_fields || {};   // fallback: read keys from product if not on installation
+  const pcf = p.custom_fields || {};
   return {
     install_date:      installation.installation_date?.split("T")[0] || "",
-    // Department Name — from installation CF first, then product CF
     department_name:
       cf.department_name || pcf.department_name || installation.customer_name || "",
     win_key:
@@ -36,11 +67,9 @@ function buildFillValues(installation) {
       installation.antivirus_key    || cf.antivirus_key    || cf.Antivirus_Key || cf.antivirus ||
       pcf.antivirus_serial_key      || pcf.antivirus_key   || pcf.Antivirus_Key || pcf.antivirus || "",
     eng_name:          installation.installer_name || "",
-    // From product (read-only — never written back)
     mc_serial:         p.serial_number || "",
     model_no:          p.name || "",
     device_brand:      p.brand || "",
-    // Address / contact — fall back to product CF for older records
     address:           cf.address       || pcf.address    || "",
     state:             cf.state         || "",
     pin:               cf.pin           || "",
@@ -49,7 +78,6 @@ function buildFillValues(installation) {
     contact_person:    cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "",
     room_no:           cf.room_no       || pcf.room_no    || "",
     proc_ram_ssd:      cf.proc_ram_ssd  || "i5/8GB/512GB",
-    // Software versions — fall back to product CF keys
     win_version:
       cf.win_version    || cf.windows_version    || pcf.win_version    || pcf.windows_version    || "",
     office_version:
@@ -59,20 +87,102 @@ function buildFillValues(installation) {
     av_validity:
       cf.av_validity    || cf.antivirus_validity  || pcf.av_validity   || pcf.antivirus_validity  || "",
     eng_code:          cf.eng_code || "",
-    // HP report — activation status
     win_activation:    cf.win_activation    || "",
     office_activation: cf.office_activation || "",
     av_activation:     cf.av_activation     || "",
-    // HP report — extra fields
     hw_serial_key:     cf.hw_serial_key || "",
     remarks:           cf.remarks       || "",
     service_date:      cf.service_date  || new Date().toISOString().split("T")[0],
-    cust_signing:      cf.cust_signing  || "",
-    // Installation checklist (c1–c7)
+    cust_signing:      cf.cust_signing  || cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "",
     c1: cf.c1 || "", c2: cf.c2 || "", c3: cf.c3 || "",
     c4: cf.c4 || "", c5: cf.c5 || "", c6: cf.c6 || "", c7: cf.c7 || "",
     t1: cf.t1 || "", t2: cf.t2 || "", t3: cf.t3 || "",
     t4: cf.t4 || "", t5: cf.t5 || "", t6: cf.t6 || "", t7: cf.t7 || "",
+  };
+}
+
+// ── Map DB row → Printer form field values ────────────────────────────────────
+function buildPrinterFillValues(installation) {
+  const cf  = installation.custom_fields || {};
+  const p   = installation.products || {};
+  const pcf = p.custom_fields || {};
+  return {
+    install_date:    installation.installation_date?.split("T")[0] || "",
+    department_name: cf.department_name || pcf.department_name || installation.customer_name || "",
+    mc_serial:       p.serial_number || "",
+    model_no:        p.name || "",
+    device_brand:    p.brand || "",
+    address:         cf.address  || pcf.address  || "",
+    tel_no:          cf.tel_no   || cf.mobile_no || pcf.tel_no || pcf.mobile_no || "",
+    email:           cf.email    || cf.email_id  || pcf.email  || pcf.email_id  || "",
+    contact_person:  cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "",
+    room_no:         cf.room_no  || pcf.room_no  || "",
+    // Device config
+    driver_version:  cf.driver_version  || "",
+    connectivity:    cf.connectivity    || "",
+    ip_address:      cf.ip_address      || "",
+    paper_size:      cf.paper_size      || "",
+    print_resolution: cf.print_resolution || "",
+    toner_model:     cf.toner_model     || "",
+    // MFP
+    scan_resolution: cf.scan_resolution || "",
+    scan_email:      cf.scan_email      || "",
+    scan_folder:     cf.scan_folder     || "",
+    fax_configured:  cf.fax_configured  || "",
+    // Photocopier
+    counter_reading: cf.counter_reading || "",
+    toner_level:     cf.toner_level     || "",
+    // Checklist
+    p1: cf.p1 || "", p2: cf.p2 || "", p3: cf.p3 || "",
+    p4: cf.p4 || "", p5: cf.p5 || "", p6: cf.p6 || "", p7: cf.p7 || "",
+    // Remarks / signing
+    remarks:      cf.remarks      || "",
+    service_date: cf.service_date || new Date().toISOString().split("T")[0],
+    cust_signing: cf.cust_signing || "",
+  };
+}
+
+// ── Map DB row → Canon Single Printer form field values ───────────────────────
+function buildCanonFillValues(installation) {
+  const cf  = installation.custom_fields || {};
+  const p   = installation.products || {};
+  const pcf = p.custom_fields || {};
+  return {
+    // Customer
+    department_name: cf.department_name || pcf.department_name || installation.customer_name || "",
+    address:         cf.address         || pcf.address || "",
+    name_of_user:    cf.name_of_user    || pcf.name_of_user    || "",
+    tel_no:          cf.tel_no          || cf.mobile_no || pcf.tel_no || pcf.mobile_no || "",
+    email_admin:     cf.email_admin     || cf.email    || pcf.email   || "",
+    room_no:         cf.room_no         || pcf.room_no || "",
+    // Toner
+    toner_71: cf.toner_71 || "", toner_72: cf.toner_72 || "",
+    toner_73: cf.toner_73 || "", toner_74: cf.toner_74 || "",
+    // Machine
+    model_no:     p.name          || cf.model_no  || "",
+    mc_serial:    p.serial_number || cf.mc_serial || "",
+    install_date: installation.installation_date?.split("T")[0] || "",
+    // Meter
+    meter_black_large: cf.meter_black_large || "", meter_black_small: cf.meter_black_small || "", meter_black_xl: cf.meter_black_xl || "",
+    meter_color_large: cf.meter_color_large || "", meter_color_small: cf.meter_color_small || "", meter_color_xl: cf.meter_color_xl || "",
+    // Power
+    power_type: cf.power_type || "",
+    // Training
+    tr_doc_align: cf.tr_doc_align || "", tr_media: cf.tr_media || "",
+    tr_ctrl_panel: cf.tr_ctrl_panel || "", tr_manual_feed: cf.tr_manual_feed || "",
+    tr_two_side: cf.tr_two_side || "", tr_warming: cf.tr_warming || "",
+    tr_toner_rep: cf.tr_toner_rep || "", tr_waste_toner: cf.tr_waste_toner || "",
+    tr_paper_jam: cf.tr_paper_jam || "", tr_routine: cf.tr_routine || "",
+    tr_driver: cf.tr_driver || "", tr_call_log: cf.tr_call_log || "",
+    tr_dos_donts: cf.tr_dos_donts || "", tr_printout: cf.tr_printout || "",
+    // Environment
+    env_ventilation: cf.env_ventilation || "", env_voltage: cf.env_voltage || "",
+    env_earthing: cf.env_earthing || "", env_space: cf.env_space || "",
+    env_power: cf.env_power || "", env_ac: cf.env_ac || "",
+    // Signing
+    service_date: cf.service_date || new Date().toISOString().split("T")[0],
+    cust_signing: cf.cust_signing || cf.contact_person || pcf.contact_person || "",
+    remarks:      cf.remarks      || "",
   };
 }
 
@@ -88,18 +198,26 @@ export default function InstallationReportView({ installation, branchName }) {
   const router   = useRouter();
   const supabase = createClient();
   const product  = installation.products || {};
-  const isPC     = product.category?.toLowerCase() === "pc";
+  const category = product.category || "";
+  const isPC       = category.toLowerCase() === "pc";
+  const deviceType = getDeviceType(category);            // null for UPS / unknown
+  const isCanon    = deviceType === "canon";             // Single Printer → Canon report
+  const isPrinter  = deviceType !== null && !isCanon;   // mfp / photocopier
+  const printerTemplate = getPrinterTemplate(category);
 
-  const [fillValues, setFillValues] = useState(() => buildFillValues(installation));
-  const [saving, setSaving]         = useState(false);
-  const [saved,  setSaved]          = useState(false);
-  const [error,  setError]          = useState(null);
+  const [fillValues, setFillValues] = useState(() =>
+    isPC     ? buildPcFillValues(installation)
+    : isCanon ? buildCanonFillValues(installation)
+    : buildPrinterFillValues(installation)
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
+  const [error,  setError]  = useState(null);
 
   function handleFill(id, val) {
     setFillValues((prev) => {
       const next = { ...prev, [id]: val };
-      // Keep Name of User and User Name (signing line) in sync
-      if (id === "contact_person") next.cust_signing = val;
+      if (id === "contact_person" || id === "contact_admin") next.cust_signing = val;
       return next;
     });
     setSaved(false);
@@ -110,48 +228,102 @@ export default function InstallationReportView({ installation, branchName }) {
     setSaving(true);
     setError(null);
     try {
+      const update = isPC
+        ? { // ── PC ──────────────────────────────────────────────────────
+            installer_name:    fillValues.eng_name    || null,
+            installation_date: fillValues.install_date || null,
+            windows_key:       fillValues.win_key     || null,
+            ms_office_key:     fillValues.office_key  || null,
+            antivirus_key:     fillValues.av_key      || null,
+            custom_fields: {
+              department_name:   fillValues.department_name,
+              address:           fillValues.address,
+              state:             fillValues.state,
+              pin:               fillValues.pin,
+              tel_no:            fillValues.tel_no,
+              email:             fillValues.email,
+              contact_person:    fillValues.contact_person,
+              room_no:           fillValues.room_no,
+              proc_ram_ssd:      fillValues.proc_ram_ssd,
+              win_version:       fillValues.win_version,
+              office_version:    fillValues.office_version,
+              av_name:           fillValues.av_name,
+              av_validity:       fillValues.av_validity,
+              eng_code:          fillValues.eng_code,
+              win_activation:    fillValues.win_activation,
+              office_activation: fillValues.office_activation,
+              av_activation:     fillValues.av_activation,
+              hw_serial_key:     fillValues.hw_serial_key,
+              remarks:           fillValues.remarks,
+              service_date:      fillValues.service_date,
+              cust_signing:      fillValues.cust_signing,
+              c1: fillValues.c1, c2: fillValues.c2, c3: fillValues.c3,
+              c4: fillValues.c4, c5: fillValues.c5, c6: fillValues.c6, c7: fillValues.c7,
+              t1: fillValues.t1, t2: fillValues.t2, t3: fillValues.t3,
+              t4: fillValues.t4, t5: fillValues.t5, t6: fillValues.t6, t7: fillValues.t7,
+            },
+          }
+        : isCanon
+        ? { // ── Canon Single Printer ─────────────────────────────────────
+            installation_date: fillValues.install_date || null,
+            installer_name:    fillValues.engineer_name || null,
+            custom_fields: {
+              department_name: fillValues.department_name, address: fillValues.address,
+              name_of_user: fillValues.name_of_user,
+              tel_no: fillValues.tel_no, email_admin: fillValues.email_admin,
+              room_no: fillValues.room_no,
+              toner_71: fillValues.toner_71, toner_72: fillValues.toner_72,
+              toner_73: fillValues.toner_73, toner_74: fillValues.toner_74,
+              model_no: fillValues.model_no, mc_serial: fillValues.mc_serial,
+              meter_black_large: fillValues.meter_black_large, meter_black_small: fillValues.meter_black_small, meter_black_xl: fillValues.meter_black_xl,
+              meter_color_large: fillValues.meter_color_large, meter_color_small: fillValues.meter_color_small, meter_color_xl: fillValues.meter_color_xl,
+              power_type: fillValues.power_type,
+              tr_doc_align: fillValues.tr_doc_align, tr_media: fillValues.tr_media,
+              tr_ctrl_panel: fillValues.tr_ctrl_panel, tr_manual_feed: fillValues.tr_manual_feed,
+              tr_two_side: fillValues.tr_two_side, tr_warming: fillValues.tr_warming,
+              tr_toner_rep: fillValues.tr_toner_rep, tr_waste_toner: fillValues.tr_waste_toner,
+              tr_paper_jam: fillValues.tr_paper_jam, tr_routine: fillValues.tr_routine,
+              tr_driver: fillValues.tr_driver, tr_call_log: fillValues.tr_call_log,
+              tr_dos_donts: fillValues.tr_dos_donts, tr_printout: fillValues.tr_printout,
+              env_ventilation: fillValues.env_ventilation, env_voltage: fillValues.env_voltage,
+              env_earthing: fillValues.env_earthing, env_space: fillValues.env_space,
+              env_power: fillValues.env_power, env_ac: fillValues.env_ac,
+              service_date: fillValues.service_date,
+              cust_signing: fillValues.cust_signing, remarks: fillValues.remarks,
+            },
+          }
+        : { // ── MFP / Photocopier ────────────────────────────────────────
+            installation_date: fillValues.install_date || null,
+            custom_fields: {
+              department_name:  fillValues.department_name,
+              address:          fillValues.address,
+              tel_no:           fillValues.tel_no,
+              email:            fillValues.email,
+              contact_person:   fillValues.contact_person,
+              room_no:          fillValues.room_no,
+              driver_version:   fillValues.driver_version,
+              connectivity:     fillValues.connectivity,
+              ip_address:       fillValues.ip_address,
+              paper_size:       fillValues.paper_size,
+              print_resolution: fillValues.print_resolution,
+              toner_model:      fillValues.toner_model,
+              scan_resolution:  fillValues.scan_resolution,
+              scan_email:       fillValues.scan_email,
+              scan_folder:      fillValues.scan_folder,
+              fax_configured:   fillValues.fax_configured,
+              counter_reading:  fillValues.counter_reading,
+              toner_level:      fillValues.toner_level,
+              p1: fillValues.p1, p2: fillValues.p2, p3: fillValues.p3,
+              p4: fillValues.p4, p5: fillValues.p5, p6: fillValues.p6, p7: fillValues.p7,
+              remarks:      fillValues.remarks,
+              service_date: fillValues.service_date,
+              cust_signing: fillValues.cust_signing,
+            },
+          };
+
       const { error: dbError } = await supabase
         .from("installations")
-        .update({
-          installer_name:    fillValues.eng_name    || null,
-          installation_date: fillValues.install_date || null,
-          windows_key:       fillValues.win_key     || null,
-          ms_office_key:     fillValues.office_key  || null,
-          antivirus_key:     fillValues.av_key      || null,
-          custom_fields: {
-            // PC identity
-            department_name:   fillValues.department_name,
-            // PC address / contact
-            address:           fillValues.address,
-            state:             fillValues.state,
-            pin:               fillValues.pin,
-            tel_no:            fillValues.tel_no,
-            email:             fillValues.email,
-            contact_person:    fillValues.contact_person,
-            room_no:           fillValues.room_no,
-            proc_ram_ssd:      fillValues.proc_ram_ssd,
-            // Software versions
-            win_version:       fillValues.win_version,
-            office_version:    fillValues.office_version,
-            av_name:           fillValues.av_name,
-            av_validity:       fillValues.av_validity,
-            eng_code:          fillValues.eng_code,
-            // Activation
-            win_activation:    fillValues.win_activation,
-            office_activation: fillValues.office_activation,
-            av_activation:     fillValues.av_activation,
-            // Extra
-            hw_serial_key:     fillValues.hw_serial_key,
-            remarks:           fillValues.remarks,
-            service_date:      fillValues.service_date,
-            cust_signing:      fillValues.cust_signing,
-            // Checklist
-            c1: fillValues.c1, c2: fillValues.c2, c3: fillValues.c3,
-            c4: fillValues.c4, c5: fillValues.c5, c6: fillValues.c6, c7: fillValues.c7,
-            t1: fillValues.t1, t2: fillValues.t2, t3: fillValues.t3,
-            t4: fillValues.t4, t5: fillValues.t5, t6: fillValues.t6, t7: fillValues.t7,
-          },
-        })
+        .update(update)
         .eq("id", installation.id);
 
       if (dbError) throw dbError;
@@ -162,6 +334,21 @@ export default function InstallationReportView({ installation, branchName }) {
       setSaving(false);
     }
   }
+
+  const handlePrint = () => {
+    if (isPC) {
+      printHpForm(fillValues, HP_TEMPLATE);
+    } else if (isCanon) {
+      printCanonForm(fillValues);
+    } else if (isPrinter) {
+      printPrinterForm(fillValues, printerTemplate, deviceType);
+    } else {
+      printInstallation(
+        installation,
+        branchName ? [{ id: installation.branch_id, name: branchName }] : [],
+      );
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -178,8 +365,7 @@ export default function InstallationReportView({ installation, branchName }) {
         </button>
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Save — only shown for PC (HP form is editable) */}
-          {isPC && (
+          {(isPC || isCanon || isPrinter) && (
             <button
               onClick={handleSave}
               disabled={saving}
@@ -193,16 +379,8 @@ export default function InstallationReportView({ installation, branchName }) {
             </button>
           )}
 
-          {/* Print */}
           <button
-            onClick={() =>
-              isPC
-                ? printHpForm(fillValues, HP_TEMPLATE)
-                : printInstallation(
-                    installation,
-                    branchName ? [{ id: installation.branch_id, name: branchName }] : [],
-                  )
-            }
+            onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-[#6C5CE7] to-[#5A4BD1] hover:shadow-lg transition-shadow"
           >
             <Printer size={15} />
@@ -247,7 +425,7 @@ export default function InstallationReportView({ installation, branchName }) {
       </div>
 
       {isPC ? (
-        /* ── HP Installation Report — editable, values saved to DB ── */
+        /* ── HP PC Installation Report ── */
         <>
           <p className="text-xs text-gray-400 mb-3">
             Fill in the checklist, activation status, and any remaining fields, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
@@ -263,8 +441,42 @@ export default function InstallationReportView({ installation, branchName }) {
             </div>
           </div>
         </>
+      ) : isCanon ? (
+        /* ── Canon Single Printer Installation Report ── */
+        <>
+          <p className="text-xs text-gray-400 mb-3">
+            Fill in customer details, training checklist, and environmental conditions, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
+          </p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 overflow-x-auto">
+            <div style={{ minWidth: 800 }}>
+              <CanonPrinterReport
+                mode="fill"
+                fillValues={fillValues}
+                onFill={handleFill}
+              />
+            </div>
+          </div>
+        </>
+      ) : isPrinter ? (
+        /* ── MFP / Photocopier Installation Report ── */
+        <>
+          <p className="text-xs text-gray-400 mb-3">
+            Fill in the device configuration, checklist, and any remaining fields, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
+          </p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 overflow-x-auto">
+            <div style={{ minWidth: 760 }}>
+              <PrinterInstallReport
+                template={printerTemplate}
+                mode="fill"
+                fillValues={fillValues}
+                onFill={handleFill}
+                deviceType={deviceType}
+              />
+            </div>
+          </div>
+        </>
       ) : (
-        /* ── Standard installation detail (read-only card) ── */
+        /* ── Generic read-only detail (UPS, etc.) ── */
         <div className="space-y-4">
           <Card>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">

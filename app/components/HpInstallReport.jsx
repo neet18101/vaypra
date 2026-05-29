@@ -266,12 +266,11 @@ export function buildHpPrintHtml(fillValues, template) {
     </span>`
   }
 
-  const C = "border:1px solid #999;padding:8px 7px;vertical-align:middle;font-size:11px;color:#000;font-family:Arial,Helvetica,sans-serif"
-  const L = `${C};width:18%;font-weight:700`
+  const C = "border:1px solid #bbb;padding:2px 5px;vertical-align:middle;font-size:9px;color:#111;font-family:Arial,Helvetica,sans-serif;line-height:1.35"
+  const L = `${C};width:18%;font-weight:700;background:#eef0f8;color:#0a3a6b`
   const V = `${C};width:32%`
-  const S = `${C};background:#d0d0d0;font-weight:700;padding:8px 7px;color:#000`
-  const T = `${C};text-align:center;background:#dce8f5;font-weight:800;letter-spacing:4px;font-size:14px;padding:11px 8px;color:#0a3a6b;text-transform:uppercase`
-  const YN = `${C};text-align:right;white-space:nowrap;width:100px`
+  const S = `${C};background:#d0d0d0;font-weight:700;padding:2px 5px;color:#000`
+  const T = `${C};text-align:center;background:#dce8f5;font-weight:800;letter-spacing:3px;font-size:12px;padding:5px 8px;color:#0a3a6b;text-transform:uppercase`
 
   const checklist = [
     { id: "c1", label: "Hardware unboxing & physical setup" },
@@ -290,38 +289,37 @@ export function buildHpPrintHtml(fillValues, template) {
   <meta charset="UTF-8">
   <title>Installation Report</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    html,body{width:100%;height:100%;font-family:'Nunito',Arial,Helvetica,sans-serif;font-size:11px;color:#000;background:#fff}
+    html,body{width:210mm;font-family:Arial,Helvetica,sans-serif;font-size:9px;color:#111;background:#fff;line-height:1.35}
     @page{size:A4 portrait;margin:7mm 8mm}
     @media print{
-      html,body{width:100%;height:100%}
+      html,body{width:210mm}
       *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     }
-    .page-wrap{height:calc(297mm - 14mm);display:flex;flex-direction:column}
+    .page-wrap{min-height:calc(297mm - 14mm);display:flex;flex-direction:column}
     .page-spacer{flex:1;min-height:0}
     table{border-collapse:collapse;width:100%;table-layout:fixed}
     td{overflow:hidden;word-break:break-word}
-    .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #0a3a6b;padding-bottom:5px;margin-bottom:4px}
-    .hdr-contact{font-size:9.5px;color:#000;text-align:right;line-height:1.7}
-    .footer{display:flex;justify-content:space-between;padding-top:32px;font-size:10.5px}
+    .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #0a3a6b;padding-bottom:4px;margin-bottom:3px}
+    .hdr-contact{font-size:8px;color:#444;text-align:right;line-height:1.6}
+    .footer{display:flex;justify-content:space-between;padding-top:24px;font-size:9px}
     .footer-sig{width:44%;text-align:center;font-weight:600}
-    .footer-sig .sig-name{margin-bottom:28px;display:block}
+    .footer-sig .sig-name{margin-bottom:22px;display:block}
     .footer-sig .sig-line{border-top:1px solid #000;padding-top:3px;display:block}
   </style>
 </head><body>
 <div class="page-wrap">
   <!-- Header -->
   <div class="hdr">
-    <img src="/logo.png" alt="Rangayan Creations" style="height:52px;object-fit:contain;max-width:55%" />
+    <img src="/logo.png" alt="Rangayan Creations" style="height:38px;object-fit:contain;max-width:45%" />
     <div class="hdr-contact">
-      <div><strong>Address:</strong> A-113, NBCC Commercial Complex, Sector-1, Gomtinagar Ext Lucknow 226010</div>
+      <div><strong>Address:</strong> A-113, NBCC Commercial Complex, Sector-1, Gomtinagar Ext, Lucknow 226010</div>
       <div><strong>Support:</strong> +91-9453495949 &nbsp;|&nbsp; <strong>Email:</strong> support@rangayancreations.com</div>
     </div>
   </div>
 
   <!-- Report Title -->
-  <table style="margin-bottom:3px">
+  <table style="margin-bottom:2px">
     <tr><td style="${T}">${template.report_title}</td></tr>
   </table>
 
@@ -337,7 +335,7 @@ export function buildHpPrintHtml(fillValues, template) {
         <td style="${L}">Specifications</td><td style="${V}">${tf("model_no")}</td>
       </tr>
       <tr>
-        <td style="${L}">Address</td><td style="${C};white-space:pre-wrap">${tf("address")}</td>
+        <td style="${L};vertical-align:top">Address</td><td style="${C};white-space:pre-wrap">${tf("address")}</td>
         <td style="${L}">M/C Serial No.</td><td style="${C}">${tf("mc_serial")}</td>
       </tr>
       <tr>
@@ -361,7 +359,7 @@ export function buildHpPrintHtml(fillValues, template) {
   </table>
 
   <!-- License Keys -->
-  <table style="margin-top:3px">
+  <table style="margin-top:2px">
     <colgroup>
       <col style="width:17%"><col style="width:33%">
       <col style="width:17%"><col style="width:33%">
@@ -399,8 +397,8 @@ export function buildHpPrintHtml(fillValues, template) {
   </table>
 
   <!-- Checklist -->
-  <table style="margin-top:3px">
-    <colgroup><col style="width:76%"><col style="width:24%"></colgroup>
+  <table style="margin-top:2px">
+    <colgroup><col style="width:78%"><col style="width:22%"></colgroup>
     <tbody>
       <tr><td colspan="2" style="${S}">INSTALLATION CHECKLIST &nbsp;(Yes / No)</td></tr>
       ${checkRows}
@@ -408,15 +406,15 @@ export function buildHpPrintHtml(fillValues, template) {
   </table>
 
   <!-- Remarks -->
-  <table style="margin-top:3px">
+  <table style="margin-top:2px">
     <tbody>
-      <tr><td colspan="4" style="${S}">REMARKS</td></tr>
-      <tr><td style="${C};height:55px">${tf("remarks")}</td></tr>
+      <tr><td style="${S}">REMARKS</td></tr>
+      <tr><td style="${C};height:36px">${tf("remarks")}</td></tr>
     </tbody>
   </table>
 
   <!-- Service Date + User Name -->
-  <table style="margin-top:3px">
+  <table style="margin-top:2px">
     <colgroup>
       <col style="width:17%"><col style="width:33%">
       <col style="width:17%"><col style="width:33%">

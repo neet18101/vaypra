@@ -10,16 +10,10 @@ export default function manifest() {
     orientation: "portrait",
     icons: [
       {
-        src: "/icons/icon-192.png",
-        sizes: "192x192",
+        src: "/icon.png",
+        sizes: "131x109",
         type: "image/png",
-        purpose: "any maskable",
-      },
-      {
-        src: "/icons/icon-512.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "any maskable",
+        purpose: "any",
       },
     ],
   };

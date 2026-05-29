@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine,
+  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine, Key, ClipboardList, Zap,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -18,26 +18,119 @@ const inputClass =
 
 const labelClass = "block text-xs font-medium text-[#9699B0] mb-1.5";
 
-export default function InstallationModal({ show, onClose, products, branches, category = "PC" }) {
+const PC_CHECKLIST = [
+  { id: "c1", label: "Hardware unboxing & physical setup" },
+  { id: "c3", label: "Windows installation & activation" },
+  { id: "c4", label: "MS Office installation & activation" },
+  { id: "c5", label: "Antivirus installation & activation" },
+  { id: "c7", label: "Windows Updates installed" },
+];
+
+function ActStatus({ id, value, onChange }) {
+  return (
+    <div className="flex gap-3">
+      {["Activated", "Pending"].map((opt) => (
+        <label key={opt} className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="radio"
+            name={id}
+            checked={value === opt}
+            onChange={() => onChange(opt)}
+            className="accent-[#6C5CE7]"
+          />
+          <span className="text-[12px] text-[#2D3436]">{opt}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function YesNo({ value, onChange }) {
+  return (
+    <div className="flex gap-3">
+      {["yes", "no"].map((opt) => (
+        <label key={opt} className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="radio"
+            checked={value === opt}
+            onChange={() => onChange(opt)}
+            className="accent-[#6C5CE7]"
+          />
+          <span className="text-[12px] text-[#2D3436] capitalize">{opt}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+const EMPTY_PC = {
+  contact_person: "", tel_no: "", email: "", room_no: "",
+  win_key: "", win_version: "", win_activation: "",
+  office_key: "", office_version: "", office_activation: "",
+  av_key: "", av_name: "", av_validity: "", av_activation: "",
+  c1: "", c3: "", c4: "", c5: "", c7: "",
+};
+
+const EMPTY_PRINTER = {
+  name_of_user: "", tel_no: "", email_admin: "", room_no: "",
+  meter_black_large: "", meter_black_small: "", meter_black_xl: "",
+  meter_color_large: "", meter_color_small: "", meter_color_xl: "",
+  power_type: "",
+  tr_doc_align: "", tr_media: "", tr_ctrl_panel: "", tr_manual_feed: "",
+  tr_two_side: "", tr_warming: "", tr_toner_rep: "", tr_waste_toner: "",
+  tr_paper_jam: "", tr_routine: "", tr_driver: "", tr_call_log: "",
+  tr_dos_donts: "", tr_printout: "",
+};
+
+const PRINTER_TRAINING = [
+  { id: "tr_doc_align",   label: "Document Alignment" },
+  { id: "tr_media",       label: "Media Loading" },
+  { id: "tr_ctrl_panel",  label: "Control Panel Operation" },
+  { id: "tr_manual_feed", label: "Manual Feed" },
+  { id: "tr_two_side",    label: "Two Sided Printing" },
+  { id: "tr_warming",     label: "Warming Up Time" },
+  { id: "tr_toner_rep",   label: "Toner Replacement" },
+  { id: "tr_waste_toner", label: "Waste Toner Replacement" },
+  { id: "tr_paper_jam",   label: "Paper Jam Clearance" },
+  { id: "tr_routine",     label: "Routine Cleaning" },
+  { id: "tr_driver",      label: "Driver Installation" },
+  { id: "tr_call_log",    label: "Call Logging Procedure" },
+  { id: "tr_dos_donts",   label: "Do's & Don'ts" },
+  { id: "tr_printout",    label: "Printout Demonstration" },
+];
+
+const REPORT_CATS = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier"]);
+
+export default function InstallationModal({ show, onClose, products, branches, installations = [], category = "PC" }) {
   const router = useRouter();
   const supabase = createClient();
 
-  // Search state
   const [snQuery, setSnQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const searchRef = useRef(null);
 
-  // Form state
   const [customFields, setCustomFields] = useState([]);
+  const [pcFields, setPcFields] = useState(EMPTY_PC);
+  const [printerFields, setPrinterFields] = useState(EMPTY_PRINTER);
+  const [linkedPcId, setLinkedPcId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Post-save state
+  const isUPS = category === "UPS";
+  const isSinglePrinter = category === "Single Printer";
+  const LINK_PC_CATEGORIES = new Set(["UPS", "Single Printer", "Multi-Function Printer", "Scanner", "Photocopier"]);
+  const needsPcLink = LINK_PC_CATEGORIES.has(category);
+
+  // PC installations available to link
+  const pcInstallations = installations.filter(
+    (i) => i.products?.category?.toLowerCase() === "pc"
+  );
+
   const [savedInstallation, setSavedInstallation] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState("brand");
-
-  // Scanner state
   const [showScanner, setShowScanner] = useState(false);
+
+  const isPC = category === "PC";
 
   const availableProducts =
     category === "PC"
@@ -68,12 +161,46 @@ export default function InstallationModal({ show, onClose, products, branches, c
     setSnQuery(product.serial_number || product.name);
     setShowSuggestions(false);
     if (product.brand) setSelectedTemplate("brand");
+
+    if (isPC) {
+      const pcf = product.custom_fields || {};
+      setPcFields({
+        contact_person: pcf.name_of_user    || pcf.contact_person    || "",
+        tel_no:         pcf.mobile_no        || pcf.tel_no            || "",
+        email:          pcf.email_id         || pcf.email             || "",
+        room_no:        pcf.room_no          || "",
+        win_key:
+          pcf.windows_key  || pcf.Windows_Key  || pcf.window_key  || "",
+        win_version:
+          pcf.windows_version || pcf.win_version || "",
+        win_activation:    "",
+        office_key:
+          pcf.ms_office_key || pcf.MS_Office_Key || pcf.office_key || pcf.Office_Key || "",
+        office_version:
+          pcf.ms_office_version || pcf.office_version || "",
+        office_activation: "",
+        av_key:
+          pcf.antivirus_serial_key || pcf.antivirus_key || pcf.Antivirus_Key || pcf.antivirus || "",
+        av_name:
+          pcf.antivirus_name    || pcf.av_name     || "",
+        av_validity:
+          pcf.antivirus_validity || pcf.av_validity || "",
+        av_activation: "",
+        c1: "", c3: "", c4: "", c5: "", c7: "",
+      });
+    }
   };
 
   const clearProduct = () => {
     setSelectedProduct(null);
     setSnQuery("");
+    if (isPC) setPcFields(EMPTY_PC);
+    if (isSinglePrinter) setPrinterFields(EMPTY_PRINTER);
+    if (needsPcLink) setLinkedPcId("");
   };
+
+  const pc = (field, val) => setPcFields((prev) => ({ ...prev, [field]: val }));
+  const pf = (field, val) => setPrinterFields((prev) => ({ ...prev, [field]: val }));
 
   const handleAddCustomField = () =>
     setCustomFields([...customFields, { name: "", value: "" }]);
@@ -91,7 +218,6 @@ export default function InstallationModal({ show, onClose, products, branches, c
     setShowScanner(false);
     setSnQuery(rawValue);
     setShowSuggestions(true);
-    // Auto-select if there's an exact serial match
     const exact = availableProducts.find(
       (p) => (p.serial_number || "").toLowerCase() === rawValue.toLowerCase()
     );
@@ -102,15 +228,15 @@ export default function InstallationModal({ show, onClose, products, branches, c
     setSnQuery("");
     setSelectedProduct(null);
     setCustomFields([]);
+    setPcFields(EMPTY_PC);
+    setPrinterFields(EMPTY_PRINTER);
+    setLinkedPcId("");
     setSavedInstallation(null);
     setSelectedTemplate("brand");
     setShowScanner(false);
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+  const handleClose = () => { resetForm(); onClose(); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,7 +246,6 @@ export default function InstallationModal({ show, onClose, products, branches, c
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Get organization_id (migration 001 replaced user_id with organization_id)
       const { data: profile } = await supabase
         .from("profiles")
         .select("current_organization_id")
@@ -128,43 +253,99 @@ export default function InstallationModal({ show, onClose, products, branches, c
         .single();
       const orgId = profile?.current_organization_id;
 
-      // Auto-read license keys stored on the product
       const pcf = selectedProduct.custom_fields || {};
-      const winKey = pcf.windows_key || pcf.Windows_Key || pcf.window_key || null;
-      const offKey = pcf.ms_office_key || pcf.MS_Office_Key || pcf.office_key || pcf.Office_Key || null;
-      const avKey  = pcf.antivirus_serial_key || pcf.antivirus_key || pcf.Antivirus_Key || pcf.antivirus || null;
+      // Fallback keys from product if PC fields are empty
+      const winKey = pcFields.win_key    || pcf.windows_key    || pcf.Windows_Key   || pcf.window_key   || null;
+      const offKey = pcFields.office_key || pcf.ms_office_key  || pcf.MS_Office_Key || pcf.office_key   || pcf.Office_Key || null;
+      const avKey  = pcFields.av_key     || pcf.antivirus_serial_key || pcf.antivirus_key || pcf.Antivirus_Key || pcf.antivirus || null;
 
-      // Build custom_fields: PC metadata first, then user-added fields
+      // Base custom_fields: copy relevant PC product metadata
       const mergedCF = {};
-      if (category === "PC") {
+      if (isPC) {
         const PC_CF_KEYS = [
-          "department_name", "address", "name_of_user", "room_no", "mobile_no", "email_id",
-          "windows_version", "ms_office_version", "antivirus_name", "antivirus_validity",
-          "antivirus_batchnumber", "warranty_period", "warranty_expiry_date",
+          "department_name", "address", "warranty_period", "warranty_expiry_date",
         ];
         PC_CF_KEYS.forEach((k) => { if (pcf[k]) mergedCF[k] = pcf[k]; });
+
+        // Merge modal PC fields
+        Object.assign(mergedCF, {
+          contact_person:    pcFields.contact_person,
+          tel_no:            pcFields.tel_no,
+          email:             pcFields.email,
+          room_no:           pcFields.room_no,
+          win_version:       pcFields.win_version,
+          win_activation:    pcFields.win_activation,
+          office_version:    pcFields.office_version,
+          office_activation: pcFields.office_activation,
+          av_name:           pcFields.av_name,
+          av_validity:       pcFields.av_validity,
+          av_activation:     pcFields.av_activation,
+          c1: pcFields.c1, c3: pcFields.c3, c4: pcFields.c4,
+          c5: pcFields.c5, c7: pcFields.c7,
+        });
       }
+
+      // Merge Single Printer fields
+      if (isSinglePrinter) {
+        const spf = selectedProduct.custom_fields || {};
+        Object.assign(mergedCF, {
+          // Auto-fill from product
+          department_name: spf.department_name || spf.name_of_user || "",
+          address:         spf.address || "",
+          // User-entered
+          name_of_user:  printerFields.name_of_user,
+          tel_no:        printerFields.tel_no,
+          email_admin:   printerFields.email_admin,
+          room_no:       printerFields.room_no,
+          // Meter Reading
+          meter_black_large: printerFields.meter_black_large,
+          meter_black_small: printerFields.meter_black_small,
+          meter_black_xl:    printerFields.meter_black_xl,
+          meter_color_large: printerFields.meter_color_large,
+          meter_color_small: printerFields.meter_color_small,
+          meter_color_xl:    printerFields.meter_color_xl,
+          // Power Supply
+          power_type: printerFields.power_type,
+          // Customer Training
+          tr_doc_align:   printerFields.tr_doc_align,   tr_media:      printerFields.tr_media,
+          tr_ctrl_panel:  printerFields.tr_ctrl_panel,  tr_manual_feed: printerFields.tr_manual_feed,
+          tr_two_side:    printerFields.tr_two_side,    tr_warming:    printerFields.tr_warming,
+          tr_toner_rep:   printerFields.tr_toner_rep,   tr_waste_toner: printerFields.tr_waste_toner,
+          tr_paper_jam:   printerFields.tr_paper_jam,   tr_routine:    printerFields.tr_routine,
+          tr_driver:      printerFields.tr_driver,      tr_call_log:   printerFields.tr_call_log,
+          tr_dos_donts:   printerFields.tr_dos_donts,   tr_printout:   printerFields.tr_printout,
+        });
+      }
+
+      // Save linked PC installation info (UPS, printers, scanners, photocopier)
+      if (needsPcLink && linkedPcId) {
+        const linkedPc = pcInstallations.find((i) => i.id === linkedPcId);
+        if (linkedPc) {
+          mergedCF.linked_pc_installation_id = linkedPcId;
+          mergedCF.linked_pc_serial    = linkedPc.products?.serial_number || "";
+          mergedCF.linked_pc_name      = linkedPc.products?.name          || "";
+          mergedCF.linked_pc_dept      = linkedPc.custom_fields?.department_name || linkedPc.customer_name || "";
+          mergedCF.linked_pc_user      = linkedPc.custom_fields?.contact_person  || "";
+        }
+      }
+
       const validFields = customFields.filter((f) => f.name.trim() && f.value.trim());
       validFields.forEach((f) => { mergedCF[f.name.trim()] = f.value.trim(); });
-      const customFieldsObj = Object.keys(mergedCF).length > 0 ? mergedCF : null;
 
-      const branchId =
-        selectedProduct?.branch_id ||
-        selectedProduct?.dispatch?.branch_id ||
-        null;
+      const branchId = selectedProduct?.branch_id || selectedProduct?.dispatch?.branch_id || null;
 
       const { data: instData, error: installError } = await supabase
         .from("installations")
         .insert({
           organization_id: orgId,
-          product_id: selectedProduct.id,
-          branch_id: branchId,
+          product_id:      selectedProduct.id,
+          branch_id:       branchId,
           installation_date: new Date().toISOString().split("T")[0],
-          windows_key:    winKey,
-          ms_office_key:  offKey,
-          antivirus_key:  avKey,
-          custom_fields: customFieldsObj,
-          status: "completed",
+          windows_key:     winKey,
+          ms_office_key:   offKey,
+          antivirus_key:   avKey,
+          custom_fields:   Object.keys(mergedCF).length > 0 ? mergedCF : null,
+          status:          "completed",
         })
         .select()
         .single();
@@ -176,11 +357,11 @@ export default function InstallationModal({ show, onClose, products, branches, c
 
       setSavedInstallation({
         ...instData,
-        productName: selectedProduct.name,
-        productBrand: selectedProduct.brand || "",
+        productName:     selectedProduct.name,
+        productBrand:    selectedProduct.brand || "",
         productCategory: selectedProduct.category || "",
-        serialNumber: selectedProduct.serial_number || "",
-        branchName: branches?.find((b) => b.id === branchId)?.name || "",
+        serialNumber:    selectedProduct.serial_number || "",
+        branchName:      branches?.find((b) => b.id === branchId)?.name || "",
       });
 
       router.refresh();
@@ -199,8 +380,6 @@ export default function InstallationModal({ show, onClose, products, branches, c
   };
 
   if (!show) return null;
-
-  // BarcodeScanner renders full-screen over everything
   if (showScanner) {
     return <BarcodeScanner onDetected={handleScan} onClose={() => setShowScanner(false)} />;
   }
@@ -208,7 +387,7 @@ export default function InstallationModal({ show, onClose, products, branches, c
   // ===== Success View =====
   if (savedInstallation) {
     const d = savedInstallation;
-    const isPC = d.productCategory?.toLowerCase() === "pc";
+    const isReportCat = REPORT_CATS.has(d.productCategory?.toLowerCase());
     const brandTheme = getBrandTheme(d.productBrand);
 
     return (
@@ -254,7 +433,7 @@ export default function InstallationModal({ show, onClose, products, branches, c
             )}
           </div>
 
-          {!isPC && (
+          {!isReportCat && (
             <div className="mt-5">
               <div className="flex items-center gap-1.5 mb-3">
                 <LayoutTemplate size={14} className="text-[#6C5CE7]" />
@@ -303,7 +482,7 @@ export default function InstallationModal({ show, onClose, products, branches, c
           )}
 
           <div className="flex gap-3 mt-5">
-            {isPC ? (
+            {isReportCat ? (
               <button
                 onClick={() => { handleClose(); router.push(`/installations/${savedInstallation.id}`); }}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold hover:shadow-lg transition-shadow"
@@ -363,7 +542,7 @@ export default function InstallationModal({ show, onClose, products, branches, c
             {/* Product Search */}
             <div ref={searchRef}>
               <label className={labelClass}>
-                {category === "PC" ? "Search by Serial No, Department, or User" : "Search by Serial Number or Product Name"}
+                {isPC ? "Search by Serial No, Department, or User" : "Search by Serial Number or Product Name"}
               </label>
               {selectedProduct ? (
                 <div className="flex items-center gap-3 bg-[#F0EDFF] border border-[#6C5CE7]/30 rounded-[10px] px-4 py-3">
@@ -376,12 +555,12 @@ export default function InstallationModal({ show, onClose, products, branches, c
                     </div>
                     <div className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
                       {selectedProduct.brand && <span>{selectedProduct.brand}</span>}
-                      {category === "PC" && selectedProduct.custom_fields?.department_name && (
+                      {isPC && selectedProduct.custom_fields?.department_name && (
                         <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold px-1.5 py-0.5 rounded">
                           {selectedProduct.custom_fields.department_name}
                         </span>
                       )}
-                      {category === "PC" && selectedProduct.custom_fields?.name_of_user && (
+                      {isPC && selectedProduct.custom_fields?.name_of_user && (
                         <span>{selectedProduct.custom_fields.name_of_user}</span>
                       )}
                     </div>
@@ -436,7 +615,7 @@ export default function InstallationModal({ show, onClose, products, branches, c
                                   {product.custom_fields.department_name}
                                 </span>
                               )}
-                              {category === "PC" && product.custom_fields?.name_of_user && (
+                              {isPC && product.custom_fields?.name_of_user && (
                                 <span>{product.custom_fields.name_of_user}</span>
                               )}
                             </div>
@@ -449,10 +628,259 @@ export default function InstallationModal({ show, onClose, products, branches, c
               )}
             </div>
 
-            {/* Custom Fields */}
+            {/* ── Linked PC selector (UPS / printers / scanner / photocopier) ── */}
+            {needsPcLink && selectedProduct && (
+              <div className="border-t border-[#E2E4F0] pt-4">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Zap size={13} className="text-[#FDCB6E]" />
+                  <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Link to PC Installation</span>
+                  <span className="ml-auto text-[10px] text-gray-400">Optional</span>
+                </div>
+
+                {pcInstallations.length === 0 ? (
+                  <p className="text-xs text-gray-400 bg-[#F8F9FE] rounded-xl px-4 py-3">
+                    No PC installations found. Record a PC installation first.
+                  </p>
+                ) : (
+                  <select
+                    value={linkedPcId}
+                    onChange={(e) => setLinkedPcId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">— Select a PC installation —</option>
+                    {pcInstallations.map((inst) => {
+                      const sn   = inst.products?.serial_number || "";
+                      const name = inst.products?.name          || "Unknown";
+                      const dept = inst.custom_fields?.department_name || inst.customer_name || "";
+                      const user = inst.custom_fields?.contact_person  || "";
+                      const label = [sn && `SN: ${sn}`, name, dept, user].filter(Boolean).join(" — ");
+                      return (
+                        <option key={inst.id} value={inst.id}>{label}</option>
+                      );
+                    })}
+                  </select>
+                )}
+
+                {linkedPcId && (() => {
+                  const linked = pcInstallations.find((i) => i.id === linkedPcId);
+                  if (!linked) return null;
+                  return (
+                    <div className="mt-2 bg-[#F0EDFF] border border-[#6C5CE7]/20 rounded-xl px-4 py-3 text-[12px] text-[#2D3436] space-y-0.5">
+                      <div className="font-semibold text-[#6C5CE7]">{linked.products?.name || "PC"}</div>
+                      {linked.products?.serial_number && <div className="font-mono text-[#6C5CE7]">{linked.products.serial_number}</div>}
+                      {(linked.custom_fields?.department_name || linked.customer_name) && (
+                        <div className="text-gray-500">{linked.custom_fields?.department_name || linked.customer_name}</div>
+                      )}
+                      {linked.custom_fields?.contact_person && (
+                        <div className="text-gray-500">{linked.custom_fields.contact_person}</div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ── Single Printer fields ── */}
+            {isSinglePrinter && selectedProduct && (
+              <div className="space-y-4 border-t border-[#E2E4F0] pt-4">
+
+                {/* User Details */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Printer size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Printer Details</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Name of User</label>
+                      <input type="text" value={printerFields.name_of_user} onChange={(e) => pf("name_of_user", e.target.value)} placeholder="User full name" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Mobile Number</label>
+                      <input type="tel" value={printerFields.tel_no} onChange={(e) => pf("tel_no", e.target.value)} placeholder="+91 XXXXX XXXXX" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email</label>
+                      <input type="email" value={printerFields.email_admin} onChange={(e) => pf("email_admin", e.target.value)} placeholder="email@example.com" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Room No / Room Name</label>
+                      <input type="text" value={printerFields.room_no} onChange={(e) => pf("room_no", e.target.value)} placeholder="e.g. Room 101" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meter Reading */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Meter Reading</span>
+                  </div>
+                  <div className="bg-[#F8F9FE] rounded-xl overflow-hidden border border-[#E2E4F0]">
+                    <div className="grid grid-cols-4 text-[11px] font-semibold text-[#9699B0] px-3 py-1.5 border-b border-[#E2E4F0]">
+                      <span>Type</span><span>Large</span><span>Small</span><span>XL</span>
+                    </div>
+                    {[["Black","black"],["Color","color"]].map(([label, key]) => (
+                      <div key={key} className="grid grid-cols-4 gap-1 px-3 py-1.5 border-b border-[#E2E4F0] last:border-0 items-center">
+                        <span className="text-[12px] font-semibold text-[#2D3436]">{label}</span>
+                        {["large","small","xl"].map((size) => (
+                          <input key={size} type="text" value={printerFields[`meter_${key}_${size}`]} onChange={(e) => pf(`meter_${key}_${size}`, e.target.value)} placeholder="0" className="bg-white border border-[#E2E4F0] rounded-lg px-2 py-1.5 text-[12px] text-[#2D3436] outline-none focus:border-[#6C5CE7] w-full" />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Power Supply Type */}
+                <div>
+                  <label className={labelClass}>Power Supply Type</label>
+                  <div className="flex gap-4 flex-wrap pt-1">
+                    {["UPS","CVT","Stabilizer","None"].map((opt) => (
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" name="pf_power_type" checked={printerFields.power_type === opt} onChange={() => pf("power_type", opt)} className="accent-[#6C5CE7]" />
+                        <span className="text-[12px] text-[#2D3436]">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Customer Training */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <ClipboardList size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Customer Training</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {PRINTER_TRAINING.map(({ id, label }, i) => (
+                      <div key={id} className="flex items-center justify-between bg-[#F8F9FE] rounded-xl px-3 py-2">
+                        <span className="text-[11px] text-[#9699B0] w-5 flex-shrink-0">{i + 1}.</span>
+                        <span className="text-[12px] text-[#2D3436] flex-1 mx-2">{label}</span>
+                        <YesNo value={printerFields[id]} onChange={(v) => pf(id, v)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* ── PC-specific fields (shown only when a PC product is selected) ── */}
+            {isPC && selectedProduct && (
+              <div className="space-y-4 border-t border-[#E2E4F0] pt-4">
+
+                {/* Customer Details */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Monitor size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Customer Details</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Name of User</label>
+                      <input type="text" value={pcFields.contact_person} onChange={(e) => pc("contact_person", e.target.value)} placeholder="Full name" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Room No.</label>
+                      <input type="text" value={pcFields.room_no} onChange={(e) => pc("room_no", e.target.value)} placeholder="e.g. 101" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Mobile No.</label>
+                      <input type="tel" value={pcFields.tel_no} onChange={(e) => pc("tel_no", e.target.value)} placeholder="+91 XXXXX XXXXX" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email ID</label>
+                      <input type="email" value={pcFields.email} onChange={(e) => pc("email", e.target.value)} placeholder="user@example.com" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* License / Product Keys */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Key size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">License / Product Keys</span>
+                  </div>
+                  <div className="space-y-3">
+
+                    {/* Windows */}
+                    <div className="bg-[#F8F9FE] rounded-xl p-3 space-y-2">
+                      <label className={labelClass + " !mb-0"}>Windows Key</label>
+                      <input type="text" value={pcFields.win_key} onChange={(e) => pc("win_key", e.target.value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" className={inputClass + " font-mono text-[12px]"} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className={labelClass}>Version</label>
+                          <input type="text" value={pcFields.win_version} onChange={(e) => pc("win_version", e.target.value)} placeholder="e.g. Windows 11 Pro" className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Activation Status</label>
+                          <div className="pt-1">
+                            <ActStatus id="win_activation" value={pcFields.win_activation} onChange={(v) => pc("win_activation", v)} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MS Office */}
+                    <div className="bg-[#F8F9FE] rounded-xl p-3 space-y-2">
+                      <label className={labelClass + " !mb-0"}>MS Office Key</label>
+                      <input type="text" value={pcFields.office_key} onChange={(e) => pc("office_key", e.target.value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" className={inputClass + " font-mono text-[12px]"} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className={labelClass}>Version</label>
+                          <input type="text" value={pcFields.office_version} onChange={(e) => pc("office_version", e.target.value)} placeholder="e.g. MS Office 2021" className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Activation Status</label>
+                          <div className="pt-1">
+                            <ActStatus id="office_activation" value={pcFields.office_activation} onChange={(v) => pc("office_activation", v)} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Antivirus */}
+                    <div className="bg-[#F8F9FE] rounded-xl p-3 space-y-2">
+                      <label className={labelClass + " !mb-0"}>Antivirus Key</label>
+                      <input type="text" value={pcFields.av_key} onChange={(e) => pc("av_key", e.target.value)} placeholder="Enter antivirus product key" className={inputClass + " font-mono text-[12px]"} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className={labelClass}>Name</label>
+                          <input type="text" value={pcFields.av_name} onChange={(e) => pc("av_name", e.target.value)} placeholder="e.g. Quick Heal" className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Validity</label>
+                          <input type="text" value={pcFields.av_validity} onChange={(e) => pc("av_validity", e.target.value)} placeholder="e.g. 3 Years" className={inputClass} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Activation Status</label>
+                        <ActStatus id="av_activation" value={pcFields.av_activation} onChange={(v) => pc("av_activation", v)} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Installation Checklist */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <ClipboardList size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Installation Checklist</span>
+                  </div>
+                  <div className="space-y-2">
+                    {PC_CHECKLIST.map(({ id, label }) => (
+                      <div key={id} className="flex items-center justify-between bg-[#F8F9FE] rounded-xl px-4 py-2.5">
+                        <span className="text-[12.5px] text-[#2D3436] flex-1 mr-3">{label}</span>
+                        <YesNo value={pcFields[id]} onChange={(v) => pc(id, v)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Fields (non-PC or extra) */}
             <div className="border-t border-[#E2E4F0] pt-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-[#9699B0]">Custom Fields</span>
+                <span className="text-xs font-medium text-[#9699B0]">Additional Fields</span>
                 <button
                   type="button"
                   onClick={handleAddCustomField}

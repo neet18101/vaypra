@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BizFlow is a SaaS dashboard for SMB business management — inventory, invoicing, dispatch tracking, installations, installment plans, and team management — built on Next.js 16 (App Router), React 19, Supabase (PostgreSQL + Auth), and Tailwind CSS v4. The app is also a PWA (`app/manifest.js`) targeted at the "Rangayan Creations" business.
+BizFlow is a SaaS dashboard for SMB business management — inventory, invoicing, dispatch tracking, installations, installment plans, and team management — built on Next.js 16 (App Router), React 19, Supabase (PostgreSQL + Auth), and Tailwind CSS v4. Targeted at the "Rangayan Creations" business.
 
 ## Commands
 
@@ -40,10 +40,11 @@ Most mutations go through `/api/` routes. **Exception:** `dispatches` and `insta
 
 ### Authentication
 
-Three Supabase clients — use the right one:
+Two Supabase utility clients — use the right one:
 - **`utils/supabase/client.js`** — `createBrowserClient()` for Client Components.
 - **`utils/supabase/server.js`** — `createServerClient()` with async cookie handling for Server Components, Route Handlers, and middleware.
-- **`utils/supabase/admin.js`** — `createAdminClient()` using `SUPABASE_SERVICE_ROLE_KEY`; bypasses RLS entirely. Only used in `app/api/admin/` routes after a `requireAdmin()` check verifies `profiles.role === "admin"`.
+
+Admin routes instantiate a service-role client inline via `createAdminClient(url, SUPABASE_SERVICE_ROLE_KEY)` (imported directly from `@supabase/supabase-js`), guarded by a local `requireAdmin()` helper that checks `profiles.role === "admin"`. There is no shared `utils/supabase/admin.js` file.
 
 Auth pages beyond login: `app/signup`, `app/forgot-password`, `app/reset-password`.
 
@@ -107,7 +108,10 @@ Framer Motion is used for sidebar collapse and card transitions.
 ### Scripts
 
 - **`scripts/seed-users.mjs`** — Seeds test users into local Supabase.
-- **`scripts/generate-icons.mjs`** — Generates PWA icon assets.
+
+### Sample Import Files
+
+`docs/` contains sample CSV/Excel files used for testing the CSV import modal (inventory, printers, UPS, etc.). These are data files, not documentation.
 
 ### Environment Variables
 

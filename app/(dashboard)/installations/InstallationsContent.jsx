@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X,
-  Printer, Eye, Trash2, Zap, ScanLine, Copy,
+  Printer, Eye, Trash2, Zap, ScanLine, Copy, Network,
 } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
@@ -31,6 +31,7 @@ export default function InstallationsContent({ installations, products, branches
   const [searchQuery, setSearchQuery] = useState("");
   const [printMenuId, setPrintMenuId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [visualizerPcId, setVisualizerPcId] = useState(null);
 
   const handleDelete = async (installation) => {
     if (!confirm(`Delete installation for "${installation.products?.name || "this product"}"? This cannot be undone.`)) return;
@@ -46,9 +47,22 @@ export default function InstallationsContent({ installations, products, branches
     }
   };
 
+  const getLinkedDevices = (pcId) =>
+    installations.filter((i) => i.custom_fields?.linked_pc_installation_id === pcId);
+
+  const DEVICE_META = {
+    "UPS":                    { icon: Zap,      color: "#FDCB6E", bg: "#FEF5E7" },
+    "Single Printer":         { icon: Printer,  color: "#00CEC9", bg: "#E0F7FA" },
+    "Multi-Function Printer": { icon: Printer,  color: "#0984E3", bg: "#E3F2FD" },
+    "Scanner":                { icon: ScanLine, color: "#00B894", bg: "#E0F5F1" },
+    "Photocopier":            { icon: Copy,     color: "#E17055", bg: "#FDE8E4" },
+  };
+
+  const REPORT_CATEGORIES = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier"]);
+
   const handlePrintClick = (installation) => {
-    const isPC = installation.products?.category?.toLowerCase() === "pc";
-    if (isPC) {
+    const cat = (installation.products?.category || "").toLowerCase();
+    if (REPORT_CATEGORIES.has(cat)) {
       router.push(`/installations/${installation.id}`);
     } else {
       setPrintMenuId(installation.id);
@@ -282,6 +296,25 @@ export default function InstallationsContent({ installations, products, branches
                       <Printer size={16} className="text-[#00CEC9]" />
                       <span className="text-[11px] font-medium">Print</span>
                     </button>
+                    {activeTab === "PC" && (() => {
+                      const count = getLinkedDevices(installation.id).length;
+                      return (
+                        <button
+                          onClick={() => setVisualizerPcId(installation.id)}
+                          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-indigo-50 transition-colors border-l border-gray-100 relative"
+                        >
+                          <div className="relative">
+                            <Network size={16} className="text-[#6C5CE7]" />
+                            {count > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-[#6C5CE7] text-white text-[8px] font-bold flex items-center justify-center">
+                                {count}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-medium">Links</span>
+                        </button>
+                      );
+                    })()}
                     <button
                       onClick={() => setExpandedRow(isExpanded ? null : installation.id)}
                       className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-gray-500 active:bg-gray-50 transition-colors border-l border-gray-100"
@@ -404,6 +437,23 @@ export default function InstallationsContent({ installations, products, branches
                             >
                               {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </button>
+                            {activeTab === "PC" && (() => {
+                              const count = getLinkedDevices(installation.id).length;
+                              return (
+                                <button
+                                  onClick={() => setVisualizerPcId(installation.id)}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors relative"
+                                  title="View connected devices"
+                                >
+                                  <Network size={16} />
+                                  {count > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#6C5CE7] text-white text-[8px] font-bold flex items-center justify-center">
+                                      {count}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })()}
                             <button
                               onClick={() => handleDelete(installation)}
                               disabled={deletingId === installation.id}
@@ -605,9 +655,118 @@ export default function InstallationsContent({ installations, products, branches
           onClose={() => setShowModal(false)}
           products={products}
           branches={branches}
+          installations={installations}
           category={activeTab}
         />
       )}
+
+      {/* ── PC Visualizer Modal ── */}
+      <AnimatePresence>
+        {visualizerPcId && (() => {
+          const pc = installations.find((i) => i.id === visualizerPcId);
+          if (!pc) return null;
+          const linked = getLinkedDevices(visualizerPcId);
+          return (
+            <motion.div
+              key="visualizer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+              onClick={() => setVisualizerPcId(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                transition={{ duration: 0.18 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+                  <div className="w-9 h-9 rounded-xl bg-[#EDE7F6] flex items-center justify-center flex-shrink-0">
+                    <Network size={18} className="text-[#6C5CE7]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-bold text-[#2D3436] truncate">
+                      {pc.products?.name || "PC"}
+                    </div>
+                    <div className="text-[11px] text-gray-400 font-mono">
+                      {pc.products?.serial_number || "—"}
+                      {pc.custom_fields?.department_name ? ` · ${pc.custom_fields.department_name}` : ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setVisualizerPcId(null)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 flex-shrink-0"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Connected devices */}
+                <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
+                  {linked.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Network size={28} className="mx-auto mb-2 text-gray-200" />
+                      <p className="text-sm text-gray-400">No devices linked to this PC</p>
+                      <p className="text-xs text-gray-300 mt-1">Link devices when recording UPS / Printer / Scanner installations</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        Connected Devices ({linked.length})
+                      </p>
+                      {linked.map((device) => {
+                        const cat  = device.products?.category || "";
+                        const meta = DEVICE_META[cat] || { icon: Wrench, color: "#9699B0", bg: "#F4F5FB" };
+                        const Icon = meta.icon;
+                        return (
+                          <div
+                            key={device.id}
+                            className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
+                            onClick={() => { setVisualizerPcId(null); router.push(`/installations/${device.id}`); }}
+                          >
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ background: meta.bg }}
+                            >
+                              <Icon size={16} style={{ color: meta.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] font-semibold text-[#2D3436] truncate">
+                                {device.products?.name || cat || "Device"}
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {device.products?.serial_number && (
+                                  <span className="font-mono text-[11px] text-[#6C5CE7]">
+                                    {device.products.serial_number}
+                                  </span>
+                                )}
+                                {device.products?.brand && (
+                                  <span className="text-[11px] text-gray-400">{device.products.brand}</span>
+                                )}
+                                <span
+                                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                  style={{ background: meta.bg, color: meta.color }}
+                                >
+                                  {cat}
+                                </span>
+                              </div>
+                            </div>
+                            <Eye size={14} className="text-gray-300 flex-shrink-0" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }
