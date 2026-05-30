@@ -127,7 +127,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
                 ? <textarea value={v("address")} onChange={(e) => onFill("address", e.target.value)} rows={2} style={{ ...inp, resize: "vertical", minHeight: 34 }} />
                 : <span style={{ display: "block", whiteSpace: "pre-wrap", fontFamily: FONT }}>{v("address") || "—"}</span>}
             </td>
-            <td style={labelC}>M/C Serial No.</td><td style={cell}>{tf("mc_serial", { mono: true })}</td>
+            <td style={labelC}>M/C Serial No.</td><td style={{ ...cell, fontFamily: MONO, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: "#0a3a6b" }}>{tf("mc_serial", { mono: true })}</td>
           </tr>
           <tr>
             <td style={labelC}>Brand Name</td><td style={cell}>{tf("device_brand", { ph: "e.g. HP / Dell / Lenovo" })}</td>
@@ -150,7 +150,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
           <tr><td colSpan={4} style={sectionC}>License / Product Keys</td></tr>
           <tr>
             <td style={labelC}>Windows Key</td>
-            <td colSpan={3} style={{ ...cell, fontFamily: MONO, letterSpacing: 1 }}>{tf("win_key", { ph: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", mono: true })}</td>
+            <td colSpan={3} style={{ ...cell, fontFamily: MONO, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: "#0a3a6b" }}>{tf("win_key", { ph: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", mono: true })}</td>
           </tr>
           <tr>
             <td style={labelC}>Windows Version</td><td style={cell}>{tf("win_version", { ph: "e.g. Windows 11 Professional" })}</td>
@@ -158,7 +158,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
           </tr>
           <tr>
             <td style={labelC}>MS Office Key</td>
-            <td colSpan={3} style={{ ...cell, fontFamily: MONO, letterSpacing: 1 }}>{tf("office_key", { ph: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", mono: true })}</td>
+            <td colSpan={3} style={{ ...cell, fontFamily: MONO, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: "#0a3a6b" }}>{tf("office_key", { ph: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX", mono: true })}</td>
           </tr>
           <tr>
             <td style={labelC}>MS Office Version</td><td style={cell}>{tf("office_version", { ph: "e.g. MS Office 2021" })}</td>
@@ -166,7 +166,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
           </tr>
           <tr>
             <td style={labelC}>Antivirus Key</td>
-            <td colSpan={3} style={{ ...cell, fontFamily: MONO, letterSpacing: 1 }}>{tf("av_key", { ph: "Enter antivirus product key", mono: true })}</td>
+            <td colSpan={3} style={{ ...cell, fontFamily: MONO, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: "#0a3a6b" }}>{tf("av_key", { ph: "Enter antivirus product key", mono: true })}</td>
           </tr>
           <tr>
             <td style={labelC}>Antivirus Name</td><td style={cell}>{tf("av_name", { ph: "e.g. Quick Heal" })}</td>
@@ -192,7 +192,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
               <td style={labelC}>Brand / Model</td>
               <td style={cell}><strong>{[v("ups_brand"), v("ups_model")].filter(Boolean).join(" — ")}</strong></td>
               <td style={labelC}>Serial No.</td>
-              <td style={{ ...cell, fontFamily: MONO }}>{v("ups_serial") || "—"}</td>
+              <td style={{ ...cell, fontFamily: MONO, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: "#0a3a6b" }}>{v("ups_serial") || "—"}</td>
             </tr>
             <tr>
               <td style={labelC}>Warranty Period</td>
@@ -293,7 +293,7 @@ export function buildHpPrintHtml(fillValues, template) {
         <td style="${LG}">Brand / Model</td>
         <td style="${C}"><strong>${esc([v("ups_brand"),v("ups_model")].filter(Boolean).join(" — "))}</strong></td>
         <td style="${LG}">Serial No.</td>
-        <td style="${C};font-family:${M}">${esc(v("ups_serial")) || "&nbsp;"}</td>
+        <td style="${C};font-family:${M};font-weight:700;font-size:12px;letter-spacing:1px;color:#0a3a6b">${esc(v("ups_serial")) || "&nbsp;"}</td>
       </tr>
       <tr>
         <td style="${LG}">Warranty Period</td>
@@ -358,7 +358,7 @@ export function buildHpPrintHtml(fillValues, template) {
         <td style="${L};vertical-align:top">Address</td>
         <td style="${C};white-space:pre-wrap">${esc(v("address")) || "&nbsp;"}</td>
         <td style="${L}">M/C Serial No.</td>
-        <td style="${C};font-family:${M}">${esc(v("mc_serial")) || "&nbsp;"}</td>
+        <td style="${C};font-family:${M};font-weight:700;font-size:12px;letter-spacing:1px;color:#0a3a6b">${esc(v("mc_serial")) || "&nbsp;"}</td>
       </tr>
       <tr>
         <td style="${L}">Brand Name</td><td style="${C}">${tf("device_brand")}</td>
@@ -385,7 +385,7 @@ export function buildHpPrintHtml(fillValues, template) {
       <tr><td colspan="4" style="${S}">License / Product Keys</td></tr>
       <tr>
         <td style="${L}">Windows Key</td>
-        <td colspan="3" style="${C};font-family:${M}">${tfMono("win_key")}</td>
+        <td colspan="3" style="${C};font-family:${M};font-weight:700;font-size:12px;letter-spacing:1px;color:#0a3a6b">${tfMono("win_key")}</td>
       </tr>
       <tr>
         <td style="${L}">Windows Version</td><td style="${C}">${tf("win_version")}</td>
@@ -393,7 +393,7 @@ export function buildHpPrintHtml(fillValues, template) {
       </tr>
       <tr>
         <td style="${L}">MS Office Key</td>
-        <td colspan="3" style="${C};font-family:${M}">${tfMono("office_key")}</td>
+        <td colspan="3" style="${C};font-family:${M};font-weight:700;font-size:12px;letter-spacing:1px;color:#0a3a6b">${tfMono("office_key")}</td>
       </tr>
       <tr>
         <td style="${L}">MS Office Version</td><td style="${C}">${tf("office_version")}</td>
@@ -401,7 +401,7 @@ export function buildHpPrintHtml(fillValues, template) {
       </tr>
       <tr>
         <td style="${L}">Antivirus Key</td>
-        <td colspan="3" style="${C};font-family:${M}">${tfMono("av_key")}</td>
+        <td colspan="3" style="${C};font-family:${M};font-weight:700;font-size:12px;letter-spacing:1px;color:#0a3a6b">${tfMono("av_key")}</td>
       </tr>
       <tr>
         <td style="${L}">Antivirus Name</td><td style="${C}">${tf("av_name")}</td>
