@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -75,11 +75,11 @@ const EMPTY_PRINTER = {
   name_of_user: "", tel_no: "", email_admin: "", room_no: "",
   meter_black_large: "", meter_black_small: "", meter_black_xl: "",
   meter_color_large: "", meter_color_small: "", meter_color_xl: "",
-  power_type: "",
-  tr_doc_align: "", tr_media: "", tr_ctrl_panel: "", tr_manual_feed: "",
-  tr_two_side: "", tr_warming: "", tr_toner_rep: "", tr_waste_toner: "",
-  tr_paper_jam: "", tr_routine: "", tr_driver: "", tr_call_log: "",
-  tr_dos_donts: "", tr_printout: "",
+  power_type: "None",
+  tr_doc_align: "yes", tr_media: "yes", tr_ctrl_panel: "yes", tr_manual_feed: "yes",
+  tr_two_side: "yes", tr_warming: "yes", tr_toner_rep: "yes", tr_waste_toner: "yes",
+  tr_paper_jam: "yes", tr_routine: "yes", tr_driver: "yes", tr_call_log: "yes",
+  tr_dos_donts: "yes", tr_printout: "yes",
 };
 
 const PRINTER_TRAINING = [
@@ -155,6 +155,21 @@ export default function InstallationModal({ show, onClose, products, branches, i
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Auto-fill printer fields from linked PC installation
+  useEffect(() => {
+    if (!linkedPcId || !isSinglePrinter) return;
+    const linked = pcInstallations.find((i) => i.id === linkedPcId);
+    if (!linked) return;
+    const cf = linked.custom_fields || {};
+    setPrinterFields((prev) => ({
+      ...prev,
+      name_of_user: cf.contact_person || cf.name_of_user || prev.name_of_user || "",
+      tel_no:       cf.tel_no         || cf.mobile_no    || prev.tel_no       || "",
+      email_admin:  cf.email          || cf.email_id     || prev.email_admin  || "",
+      room_no:      cf.room_no        || prev.room_no    || "",
+    }));
+  }, [linkedPcId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectProduct = (product) => {
     setSelectedProduct(product);
@@ -364,7 +379,7 @@ export default function InstallationModal({ show, onClose, products, branches, i
         branchName:      branches?.find((b) => b.id === branchId)?.name || "",
       });
 
-      router.refresh();
+      startTransition(() => router.refresh());
     } catch (err) {
       console.error("Installation recording failed:", err);
       alert("Failed to record installation: " + err.message);
@@ -396,8 +411,9 @@ export default function InstallationModal({ show, onClose, products, branches, i
         onClick={handleClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
           className="bg-white max-w-lg w-full rounded-2xl p-6 mx-4 my-auto"
         >
@@ -525,11 +541,12 @@ export default function InstallationModal({ show, onClose, products, branches, i
         onClick={handleClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white max-w-lg w-full rounded-2xl p-6 mx-4 my-auto"
+          className={`bg-white rounded-2xl p-6 mx-4 my-auto overflow-hidden w-full ${isSinglePrinter ? "max-w-2xl" : "max-w-lg"}`}
         >
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold font-[var(--font-display)]">Record {category} Installation</h2>
@@ -745,18 +762,43 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
                 {/* Customer Training */}
                 <div>
-                  <div className="flex items-center gap-1.5 mb-2">
+                  <div className="flex items-center gap-1.5 mb-2.5">
                     <ClipboardList size={13} className="text-[#6C5CE7]" />
                     <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Customer Training</span>
+                    <span className="ml-auto text-[10px] text-[#9699B0]">✓ = Trained</span>
                   </div>
-                  <div className="space-y-1.5">
-                    {PRINTER_TRAINING.map(({ id, label }, i) => (
-                      <div key={id} className="flex items-center justify-between bg-[#F8F9FE] rounded-xl px-3 py-2">
-                        <span className="text-[11px] text-[#9699B0] w-5 flex-shrink-0">{i + 1}.</span>
-                        <span className="text-[12px] text-[#2D3436] flex-1 mx-2">{label}</span>
-                        <YesNo value={printerFields[id]} onChange={(v) => pf(id, v)} />
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PRINTER_TRAINING.map(({ id, label }, i) => {
+                      const checked = printerFields[id] === "yes";
+                      return (
+                        <label
+                          key={id}
+                          onClick={() => pf(id, checked ? "no" : "yes")}
+                          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer select-none transition-all"
+                          style={{
+                            background: checked ? "#EDE7F6" : "#F8F9FE",
+                            border: `1px solid ${checked ? "#6C5CE730" : "#E2E4F0"}`,
+                          }}
+                        >
+                          <div
+                            className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                            style={{
+                              background: checked ? "#6C5CE7" : "#fff",
+                              border: `1.5px solid ${checked ? "#6C5CE7" : "#C4C7DB"}`,
+                            }}
+                          >
+                            {checked && (
+                              <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                                <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-medium leading-tight" style={{ color: checked ? "#6C5CE7" : "#6C6F87" }}>
+                            {label}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 

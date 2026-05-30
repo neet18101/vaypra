@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -71,7 +71,7 @@ export default function DispatchesContent({ dispatches, branches, products }) {
         }
       }
 
-      router.refresh();
+      startTransition(() => router.refresh());
     } finally {
       setMarkingId(null);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Phone, User } from "lucide-react";
@@ -130,7 +130,7 @@ export default function DispatchModal({
           .eq("id", productId);
       }
 
-      router.refresh();
+      startTransition(() => router.refresh());
       handleClose();
     } catch (err) {
       console.error("Dispatch creation failed:", err);

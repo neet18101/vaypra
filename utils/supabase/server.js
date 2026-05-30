@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
-export async function createClient() {
+// One Supabase client per request (deduplicates cookies() calls)
+export const createClient = cache(async () => {
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -18,11 +20,17 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing sessions.
+            // Called from a Server Component — fine, middleware handles refresh.
           }
         },
       },
     }
   );
-}
+});
+
+// One getUser() network call per request — safe to call from layout + pages.
+// React.cache() deduplicates within the same RSC render tree.
+export const getAuthUser = cache(async () => {
+  const supabase = await createClient();
+  return supabase.auth.getUser();
+});

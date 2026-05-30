@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, startTransition  } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -39,7 +39,7 @@ export default function InstallationsContent({ installations, products, branches
     try {
       await supabase.from("installations").delete().eq("id", installation.id);
       await supabase.from("products").update({ status: "delivered" }).eq("id", installation.product_id);
-      router.refresh();
+      startTransition(() => router.refresh());
     } catch (err) {
       alert("Delete failed: " + err.message);
     } finally {

@@ -26,7 +26,31 @@ export default async function InstallationReportPage({ params }) {
   const branchName =
     (branches || []).find((b) => b.id === installation.branch_id)?.name || "";
 
+  // For PC reports: fetch any linked devices (UPS, printer, etc.) that reference this PC
+  let linkedDevices = [];
+  if (installation.products?.category?.toLowerCase() === "pc") {
+    const { data: linked } = await supabase
+      .from("installations")
+      .select("*, products(*)")
+      .filter("custom_fields->>linked_pc_installation_id", "eq", id);
+
+    // fallback: if join failed, fetch products separately
+    if (linked?.length) {
+      for (const dev of linked) {
+        if (!dev.products && dev.product_id) {
+          const { data: prod } = await supabase.from("products").select("*").eq("id", dev.product_id).single();
+          if (prod) dev.products = prod;
+        }
+      }
+    }
+    linkedDevices = linked || [];
+  }
+
   return (
-    <InstallationReportView installation={installation} branchName={branchName} />
+    <InstallationReportView
+      installation={installation}
+      branchName={branchName}
+      linkedDevices={linkedDevices}
+    />
   );
 }

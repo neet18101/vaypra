@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -377,7 +377,7 @@ export default function InventoryContent({ products, branches }) {
         if (!res.ok) { const err = await res.json(); alert("Failed: " + err.error); return; }
       }
       closeModal();
-      router.refresh();
+      startTransition(() => router.refresh());
     } finally {
       setSaving(false);
     }
@@ -428,7 +428,7 @@ export default function InventoryContent({ products, branches }) {
         if (!res.ok) { const err = await res.json(); alert("Failed: " + err.error); return; }
       }
       closeModal();
-      router.refresh();
+      startTransition(() => router.refresh());
     } finally {
       setSaving(false);
     }
@@ -447,7 +447,7 @@ export default function InventoryContent({ products, branches }) {
             const supabase = createClient();
             await supabase.from("installations").update({ product_id: null }).eq("product_id", prev.id);
             await supabase.from("products").delete().eq("id", prev.id);
-            router.refresh();
+            startTransition(() => router.refresh());
           })();
           return null;
         }
@@ -469,7 +469,7 @@ export default function InventoryContent({ products, branches }) {
     const supabase = createClient();
     await supabase.from("installations").update({ product_id: null }).eq("product_id", id);
     await supabase.from("products").delete().eq("id", id);
-    router.refresh();
+    startTransition(() => router.refresh());
   };
 
   const handleDeleteSelected = async () => {
@@ -480,7 +480,7 @@ export default function InventoryContent({ products, branches }) {
       const supabase = createClient();
       await supabase.from("products").delete().in("id", selectedIds);
       setSelectedIds([]);
-      router.refresh();
+      startTransition(() => router.refresh());
     } catch (err) {
       alert("Failed: " + err.message);
     } finally {
@@ -529,7 +529,7 @@ export default function InventoryContent({ products, branches }) {
       setImportProgress({ tab: "PC", current: i + 1, total: rows.length, done: false, errorCount: errors.length, skipped });
     }
     setImportProgress({ tab: "PC", current: rows.length, total: rows.length, done: true, errorCount: errors.length, skipped });
-    router.refresh();
+    startTransition(() => router.refresh());
     setTimeout(() => setImportProgress(null), 5000);
     return { count: rows.length - errors.length - skipped, errors };
   };
@@ -563,7 +563,7 @@ export default function InventoryContent({ products, branches }) {
       setImportProgress({ tab, current: i + 1, total: rows.length, done: false, errorCount: errors.length, skipped });
     }
     setImportProgress({ tab, current: rows.length, total: rows.length, done: true, errorCount: errors.length, skipped });
-    router.refresh();
+    startTransition(() => router.refresh());
     setTimeout(() => setImportProgress(null), 5000);
     return { count: rows.length - errors.length - skipped, errors };
   };
@@ -599,7 +599,7 @@ export default function InventoryContent({ products, branches }) {
         onProgress?.(i + 1, i, err.message);
       }
     }
-    router.refresh();
+    startTransition(() => router.refresh());
     return { count: rows.length - errors.length, errors };
   };
 

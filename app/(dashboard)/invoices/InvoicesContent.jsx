@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FileText, Download, Plus, Eye, Edit, Send, X, Upload } from "lucide-react";
@@ -83,7 +83,7 @@ export default function InvoicesContent({ invoices }) {
       if (res.ok) {
         setShowModal(false);
         setForm({ ...defaultForm });
-        router.refresh();
+        startTransition(() => router.refresh());
       } else {
         const err = await res.json();
         alert("Failed to add invoice: " + err.error);
@@ -114,7 +114,7 @@ export default function InvoicesContent({ invoices }) {
         throw new Error(err.error);
       }
     }
-    router.refresh();
+    startTransition(() => router.refresh());
     return mapped.length;
   };
 

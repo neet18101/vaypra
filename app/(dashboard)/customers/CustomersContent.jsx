@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -82,7 +82,7 @@ export default function CustomersContent({ customers }) {
       }
       setShowModal(false);
       setForm({ name: "", phone: "", email: "", balance: "", loyalty_tier: "Silver", total_orders: "" });
-      router.refresh();
+      startTransition(() => router.refresh());
     } finally {
       setSaving(false);
     }
@@ -108,7 +108,7 @@ export default function CustomersContent({ customers }) {
         throw new Error(err.error);
       }
     }
-    router.refresh();
+    startTransition(() => router.refresh());
     return mapped.length;
   };
 

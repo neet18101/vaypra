@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { motion } from "framer-motion";
@@ -77,7 +77,7 @@ export default function InstallmentsContent({ installments }) {
       }
       setShowModal(false);
       setForm(emptyForm);
-      router.refresh();
+      startTransition(() => router.refresh());
     } catch (err) {
       console.error("Failed to create installment plan:", err);
     } finally {

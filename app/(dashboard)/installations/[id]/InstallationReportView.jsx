@@ -49,7 +49,7 @@ function getPrinterTemplate(category) {
 }
 
 // ── Map DB row → HP PC form field values ──────────────────────────────────────
-function buildPcFillValues(installation) {
+function buildPcFillValues(installation, linkedDevices = []) {
   const cf  = installation.custom_fields || {};
   const p   = installation.products || {};
   const pcf = p.custom_fields || {};
@@ -98,6 +98,21 @@ function buildPcFillValues(installation) {
     c4: cf.c4 || "", c5: cf.c5 || "", c6: cf.c6 || "", c7: cf.c7 || "",
     t1: cf.t1 || "", t2: cf.t2 || "", t3: cf.t3 || "",
     t4: cf.t4 || "", t5: cf.t5 || "", t6: cf.t6 || "", t7: cf.t7 || "",
+    // Linked UPS (first matched device with category UPS)
+    ...(() => {
+      const ups = linkedDevices.find(
+        (d) => d.products?.category?.toLowerCase() === "ups"
+      );
+      if (!ups) return {};
+      const up = ups.products || {};
+      return {
+        ups_model:        up.name           || "",
+        ups_brand:        up.brand          || "",
+        ups_serial:       up.serial_number  || "",
+        ups_warranty:     "3 Years",
+        ups_install_date: ups.installation_date?.split("T")[0] || "",
+      };
+    })(),
   };
 }
 
@@ -132,9 +147,9 @@ function buildPrinterFillValues(installation) {
     // Photocopier
     counter_reading: cf.counter_reading || "",
     toner_level:     cf.toner_level     || "",
-    // Checklist
-    p1: cf.p1 || "", p2: cf.p2 || "", p3: cf.p3 || "",
-    p4: cf.p4 || "", p5: cf.p5 || "", p6: cf.p6 || "", p7: cf.p7 || "",
+    // Checklist — default all "yes"
+    p1: cf.p1 || "yes", p2: cf.p2 || "yes", p3: cf.p3 || "yes",
+    p4: cf.p4 || "yes", p5: cf.p5 || "yes", p6: cf.p6 || "yes", p7: cf.p7 || "yes",
     // Remarks / signing
     remarks:      cf.remarks      || "",
     service_date: cf.service_date || new Date().toISOString().split("T")[0],
@@ -165,16 +180,16 @@ function buildCanonFillValues(installation) {
     // Meter
     meter_black_large: cf.meter_black_large || "", meter_black_small: cf.meter_black_small || "", meter_black_xl: cf.meter_black_xl || "",
     meter_color_large: cf.meter_color_large || "", meter_color_small: cf.meter_color_small || "", meter_color_xl: cf.meter_color_xl || "",
-    // Power
-    power_type: cf.power_type || "",
-    // Training
-    tr_doc_align: cf.tr_doc_align || "", tr_media: cf.tr_media || "",
-    tr_ctrl_panel: cf.tr_ctrl_panel || "", tr_manual_feed: cf.tr_manual_feed || "",
-    tr_two_side: cf.tr_two_side || "", tr_warming: cf.tr_warming || "",
-    tr_toner_rep: cf.tr_toner_rep || "", tr_waste_toner: cf.tr_waste_toner || "",
-    tr_paper_jam: cf.tr_paper_jam || "", tr_routine: cf.tr_routine || "",
-    tr_driver: cf.tr_driver || "", tr_call_log: cf.tr_call_log || "",
-    tr_dos_donts: cf.tr_dos_donts || "", tr_printout: cf.tr_printout || "",
+    // Power — default "None"
+    power_type: cf.power_type || "None",
+    // Training — default all "yes"
+    tr_doc_align:   cf.tr_doc_align   || "yes", tr_media:       cf.tr_media       || "yes",
+    tr_ctrl_panel:  cf.tr_ctrl_panel  || "yes", tr_manual_feed: cf.tr_manual_feed  || "yes",
+    tr_two_side:    cf.tr_two_side    || "yes", tr_warming:     cf.tr_warming      || "yes",
+    tr_toner_rep:   cf.tr_toner_rep   || "yes", tr_waste_toner: cf.tr_waste_toner  || "yes",
+    tr_paper_jam:   cf.tr_paper_jam   || "yes", tr_routine:     cf.tr_routine      || "yes",
+    tr_driver:      cf.tr_driver      || "yes", tr_call_log:    cf.tr_call_log     || "yes",
+    tr_dos_donts:   cf.tr_dos_donts   || "yes", tr_printout:    cf.tr_printout     || "yes",
     // Environment
     env_ventilation: cf.env_ventilation || "", env_voltage: cf.env_voltage || "",
     env_earthing: cf.env_earthing || "", env_space: cf.env_space || "",
@@ -194,7 +209,7 @@ function formatDate(date) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function InstallationReportView({ installation, branchName }) {
+export default function InstallationReportView({ installation, branchName, linkedDevices = [] }) {
   const router   = useRouter();
   const supabase = createClient();
   const product  = installation.products || {};
@@ -206,7 +221,7 @@ export default function InstallationReportView({ installation, branchName }) {
   const printerTemplate = getPrinterTemplate(category);
 
   const [fillValues, setFillValues] = useState(() =>
-    isPC     ? buildPcFillValues(installation)
+    isPC     ? buildPcFillValues(installation, linkedDevices)
     : isCanon ? buildCanonFillValues(installation)
     : buildPrinterFillValues(installation)
   );
@@ -351,7 +366,7 @@ export default function InstallationReportView({ installation, branchName }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="w-full">
 
       {/* ── Top action bar ── */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
@@ -430,16 +445,12 @@ export default function InstallationReportView({ installation, branchName }) {
           <p className="text-xs text-gray-400 mb-3">
             Fill in the checklist, activation status, and any remaining fields, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
           </p>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 overflow-x-auto">
-            <div style={{ minWidth: 760 }}>
-              <HpInstallReport
-                template={HP_TEMPLATE}
-                mode="fill"
-                fillValues={fillValues}
-                onFill={handleFill}
-              />
-            </div>
-          </div>
+          <HpInstallReport
+            template={HP_TEMPLATE}
+            mode="fill"
+            fillValues={fillValues}
+            onFill={handleFill}
+          />
         </>
       ) : isCanon ? (
         /* ── Canon Single Printer Installation Report ── */
@@ -447,15 +458,11 @@ export default function InstallationReportView({ installation, branchName }) {
           <p className="text-xs text-gray-400 mb-3">
             Fill in customer details, training checklist, and environmental conditions, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
           </p>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 overflow-x-auto">
-            <div style={{ minWidth: 800 }}>
-              <CanonPrinterReport
-                mode="fill"
-                fillValues={fillValues}
-                onFill={handleFill}
-              />
-            </div>
-          </div>
+          <CanonPrinterReport
+            mode="fill"
+            fillValues={fillValues}
+            onFill={handleFill}
+          />
         </>
       ) : isPrinter ? (
         /* ── MFP / Photocopier Installation Report ── */
@@ -463,17 +470,13 @@ export default function InstallationReportView({ installation, branchName }) {
           <p className="text-xs text-gray-400 mb-3">
             Fill in the device configuration, checklist, and any remaining fields, then click <strong>Save</strong>. Use <strong>Print</strong> to generate the A4 report.
           </p>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 overflow-x-auto">
-            <div style={{ minWidth: 760 }}>
-              <PrinterInstallReport
-                template={printerTemplate}
-                mode="fill"
-                fillValues={fillValues}
-                onFill={handleFill}
-                deviceType={deviceType}
-              />
-            </div>
-          </div>
+          <PrinterInstallReport
+            template={printerTemplate}
+            mode="fill"
+            fillValues={fillValues}
+            onFill={handleFill}
+            deviceType={deviceType}
+          />
         </>
       ) : (
         /* ── Generic read-only detail (UPS, etc.) ── */

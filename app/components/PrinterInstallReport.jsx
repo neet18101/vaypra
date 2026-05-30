@@ -138,7 +138,7 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
         ]
 
   return (
-    <div style={{ maxWidth: 1060, margin: "0 auto", background: "#fff", border: "1px solid #d0d0d0", fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif", color: "#222" }}>
+    <div style={{ width: "100%", background: "#fff", border: "1px solid #c0c4d8", fontFamily: "'Plus Jakarta Sans','Segoe UI',Arial,sans-serif", color: "#222", borderRadius: 4 }}>
       {/* Header */}
       <div style={{ padding: "6px 14px 4px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #e0e0e0" }}>
         <img src="/logo.png" alt="Rangayan Creations" style={{ height: 56, objectFit: "contain" }} />
@@ -387,10 +387,10 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
   <title>${template.report_title}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    html,body{width:210mm;font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:11px;color:#111;background:#fff;line-height:1.4}
-    @page{size:A4 portrait;margin:6mm 8mm}
-    @media print{html,body{width:210mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-    .pw{min-height:calc(297mm - 12mm);display:flex;flex-direction:column}
+    html,body{margin:0;padding:0;background:#fff;font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:11px;color:#111;line-height:1.4}
+    @page{size:A4 portrait;margin:0}
+    @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+    .pw{width:210mm;min-height:297mm;padding:10mm 12mm 8mm;box-sizing:border-box;display:flex;flex-direction:column}
     .ps{flex:1;min-height:0}
     table{border-collapse:collapse;width:100%;table-layout:fixed}
     td,th{overflow:hidden;word-break:break-word}

@@ -9,9 +9,9 @@ export default async function InstallationsPage() {
   try {
     const supabase = await createClient();
     const [installationsRes, productsRes, branchesRes] = await Promise.all([
-      supabase.from("installations").select("*, products(*)").order("installation_date", { ascending: false }),
-      supabase.from("products").select("*").order("name"),
-      supabase.from("branches").select("*").order("name"),
+      supabase.from("installations").select("*, products(*)").order("installation_date", { ascending: false }).limit(200),
+      supabase.from("products").select("id,name,category,brand,serial_number,status,custom_fields").order("name"),
+      supabase.from("branches").select("id,name").order("name"),
     ]);
     if (installationsRes.data) installations = installationsRes.data;
     if (productsRes.data) products = productsRes.data;
