@@ -13,6 +13,9 @@ import InstallationModal, { printInstallation } from "@/app/components/Installat
 import { TEMPLATES, getBrandTheme } from "@/app/components/PrintTemplates";
 import { createClient } from "@/utils/supabase/client";
 
+// DB stores "PhotoCopy", UI uses "Photocopier"
+const normalizeCategory = (cat) => cat === "PhotoCopy" ? "Photocopier" : (cat || "");
+
 const TABS = [
   { id: "PC",                     label: "PC",                     icon: Monitor, color: "#6C5CE7" },
   { id: "Single Printer",         label: "Single Printer",         icon: Printer, color: "#00CEC9" },
@@ -61,7 +64,7 @@ export default function InstallationsContent({ installations, products, branches
   const REPORT_CATEGORIES = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier"]);
 
   const handlePrintClick = (installation) => {
-    const cat = (installation.products?.category || "").toLowerCase();
+    const cat = normalizeCategory(installation.products?.category).toLowerCase();
     if (REPORT_CATEGORIES.has(cat)) {
       router.push(`/installations/${installation.id}`);
     } else {
@@ -69,11 +72,11 @@ export default function InstallationsContent({ installations, products, branches
     }
   };
 
-  const totalInstallations = installations.filter((i) => TABS.some((t) => t.id === i.products?.category)).length;
+  const totalInstallations = installations.filter((i) => TABS.some((t) => t.id === normalizeCategory(i.products?.category))).length;
 
   const thisMonthCount = installations.filter((inst) => {
     if (!inst.installation_date) return false;
-    if (!TABS.some((t) => t.id === inst.products?.category)) return false;
+    if (!TABS.some((t) => t.id === normalizeCategory(inst.products?.category))) return false;
     const d = new Date(inst.installation_date);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -97,7 +100,7 @@ export default function InstallationsContent({ installations, products, branches
   };
 
   const filteredInstallations = installations.filter((inst) => {
-    if (inst.products?.category !== activeTab) return false;
+    if (normalizeCategory(inst.products?.category) !== activeTab) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     const productName = inst.products?.name || "";
@@ -153,7 +156,7 @@ export default function InstallationsContent({ installations, products, branches
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
-          const count = installations.filter((i) => i.products?.category === tab.id).length;
+          const count = installations.filter((i) => normalizeCategory(i.products?.category) === tab.id).length;
           return (
             <button
               key={tab.id}

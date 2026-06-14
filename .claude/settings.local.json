@@ -17,7 +17,8 @@
       "Bash(curl -s http://localhost:3000/)",
       "Bash(curl -s http://localhost:3000/dashboard)",
       "Bash(curl -s http://localhost:3000/login)",
-      "Bash(curl -s http://localhost:3000/ -o /dev/null -w \"%{http_code}\")"
+      "Bash(curl -s http://localhost:3000/ -o /dev/null -w \"%{http_code}\")",
+      "Bash(Remove-Item \"e:\\\\2026\\\\BizFlow\\\\middleware.js\" -Force)"
     ]
   }
 }

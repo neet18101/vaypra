@@ -110,14 +110,10 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
   })()
 
   const checklist =
-    deviceType === "photocopier"
+    (deviceType === "scanner" || deviceType === "photocopier")
       ? [
           { id: "p1", label: "Hardware unboxing & physical setup" },
-          { id: "p2", label: "Toner installed & level verified" },
-          { id: "p3", label: "Copy function tested & quality verified" },
-          { id: "p4", label: "Counter reading recorded" },
-          { id: "p5", label: "Network configuration (if applicable)" },
-          { id: "p6", label: "Sort / staple function tested" },
+          { id: "p2", label: "Driver installation completed" },
         ]
       : deviceType === "mfp"
       ? [
@@ -127,7 +123,6 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
           { id: "p4", label: "Network / WiFi configuration" },
           { id: "p5", label: "Scan function tested" },
           { id: "p6", label: "Copy function tested" },
-          { id: "p7", label: "Scan-to-email / folder configured" },
         ]
       : [
           { id: "p1", label: "Hardware unboxing & physical setup" },
@@ -187,31 +182,25 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
           </tr>
           <tr>
             <td style={labelTd}>Name of User:</td><td style={cellTd}>{textField("contact_person")}</td>
-            <td style={labelTd}>Room No:</td><td style={cellTd}>{textField("room_no")}</td>
+            <td style={labelTd}>Room No / Room Name:</td><td style={cellTd}>{textField("room_no")}</td>
           </tr>
 
           {/* Device Configuration */}
           <tr><td colSpan={4} style={sectionTd}>DEVICE CONFIGURATION</td></tr>
           <tr>
-            <td style={labelTd}>Driver Version:</td>
-            <td style={cellTd}>{textField("driver_version", { placeholder: "e.g. v40.4.2526" })}</td>
             <td style={labelTd}>Connectivity:</td>
             <td style={cellTd}>{radioGroup("connectivity", ["USB", "WiFi", "Network"])}</td>
-          </tr>
-          <tr>
-            <td style={labelTd}>IP Address:</td>
-            <td style={cellTd}>{textField("ip_address", { placeholder: "e.g. 192.168.1.100" })}</td>
             <td style={labelTd}>Paper Size:</td>
-            <td style={cellTd}>{radioGroup("paper_size", ["A4", "A3", "Legal"])}</td>
+            <td style={cellTd}>{radioGroup("paper_size", ["A4", "A3"])}</td>
           </tr>
+          {deviceType !== "scanner" && (
           <tr>
-            <td style={labelTd}>Print Resolution:</td>
-            <td style={cellTd}>{textField("print_resolution", { placeholder: "e.g. 600 DPI" })}</td>
             <td style={labelTd}>Toner / Ink Model:</td>
-            <td style={cellTd}>{textField("toner_model", { placeholder: "e.g. HP 85A / Canon 052" })}</td>
+            <td colSpan={3} style={cellTd}>{textField("toner_model", { placeholder: "e.g. HP 85A / Canon 052" })}</td>
           </tr>
+          )}
 
-          {/* MFP-specific: Scan & Copy */}
+          {/* SCAN & COPY CONFIGURATION — disabled
           {deviceType === "mfp" && <>
             <tr><td colSpan={4} style={sectionTd}>SCAN &amp; COPY CONFIGURATION</td></tr>
             <tr>
@@ -226,9 +215,9 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
               <td style={labelTd}>Fax Configured:</td>
               <td style={{ ...cellTd, textAlign: "right" }}>{yesNo("fax_configured")}</td>
             </tr>
-          </>}
+          </>} */}
 
-          {/* Photocopier-specific */}
+          {/* PHOTOCOPIER DETAILS — disabled
           {deviceType === "photocopier" && <>
             <tr><td colSpan={4} style={sectionTd}>PHOTOCOPIER DETAILS</td></tr>
             <tr>
@@ -237,7 +226,7 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
               <td style={labelTd}>Toner Level:</td>
               <td style={cellTd}>{textField("toner_level", { placeholder: "e.g. New / 75%" })}</td>
             </tr>
-          </>}
+          </>} */}
 
           {/* Installation Checklist */}
           <tr><td colSpan={4} style={sectionTd}>INSTALLATION CHECKLIST&nbsp;&nbsp;(Yes / No)</td></tr>
@@ -247,18 +236,6 @@ export function PrinterInstallReport({ template, mode, fillValues, onFill, devic
               <td colSpan={3} style={{ ...cellTd, textAlign: "right", whiteSpace: "nowrap" }}>{yesNo(c.id)}</td>
             </tr>
           ))}
-
-          {/* Remarks */}
-          <tr><td colSpan={4} style={sectionTd}>REMARKS</td></tr>
-          <tr>
-            <td colSpan={4} style={{ ...cellTd, height: 32 }}>
-              {mode === "fill" ? (
-                <input type="text" value={v("remarks")} onChange={(e) => onFill("remarks", e.target.value)} style={{ ...inp, height: 28 }} />
-              ) : (
-                <span style={{ display: "block", height: 28 }}>{v("remarks")}</span>
-              )}
-            </td>
-          </tr>
 
           <tr>
             <td style={labelTd}>Service Date:</td><td style={cellTd}>{textField("service_date", { type: "date" })}</td>
@@ -324,14 +301,10 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
   const T  = `text-align:center;background:#dce8f5;font-weight:800;letter-spacing:3px;font-size:15px;padding:8px;color:#0a3a6b;text-transform:uppercase;font-family:${F};border:1px solid #bbb`
 
   const checklist =
-    deviceType === "photocopier"
+    (deviceType === "scanner" || deviceType === "photocopier")
       ? [
           { id: "p1", label: "Hardware unboxing & physical setup" },
-          { id: "p2", label: "Toner installed & level verified" },
-          { id: "p3", label: "Copy function tested & quality verified" },
-          { id: "p4", label: "Counter reading recorded" },
-          { id: "p5", label: "Network configuration (if applicable)" },
-          { id: "p6", label: "Sort / staple function tested" },
+          { id: "p2", label: "Driver installation completed" },
         ]
       : deviceType === "mfp"
       ? [
@@ -341,7 +314,6 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
           { id: "p4", label: "Network / WiFi configuration" },
           { id: "p5", label: "Scan function tested" },
           { id: "p6", label: "Copy function tested" },
-          { id: "p7", label: "Scan-to-email / folder configured" },
         ]
       : [
           { id: "p1", label: "Hardware unboxing & physical setup" },
@@ -357,29 +329,33 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
 
   const cols = `<colgroup><col style="width:17%"><col style="width:33%"><col style="width:17%"><col style="width:33%"></colgroup>`
 
-  const mfpSection = deviceType === "mfp"
-    ? `<table style="margin-top:3px">${cols}<tbody>
-        <tr><td colspan="4" style="${S}">SCAN &amp; COPY CONFIGURATION</td></tr>
-        <tr>
-          <td style="${L}">Scan Resolution</td><td style="${V}">${tf("scan_resolution")}</td>
-          <td style="${L}">Scan-to-Email</td><td style="${C};text-align:right">${yn("scan_email")}</td>
-        </tr>
-        <tr>
-          <td style="${L}">Scan-to-Folder</td><td style="${C};text-align:right">${yn("scan_folder")}</td>
-          <td style="${L}">Fax Configured</td><td style="${C};text-align:right">${yn("fax_configured")}</td>
-        </tr>
-      </tbody></table>`
-    : ""
+  // SCAN & COPY CONFIGURATION — disabled
+  // const mfpSection = deviceType === "mfp"
+  //   ? `<table style="margin-top:3px">${cols}<tbody>
+  //       <tr><td colspan="4" style="${S}">SCAN &amp; COPY CONFIGURATION</td></tr>
+  //       <tr>
+  //         <td style="${L}">Scan Resolution</td><td style="${V}">${tf("scan_resolution")}</td>
+  //         <td style="${L}">Scan-to-Email</td><td style="${C};text-align:right">${yn("scan_email")}</td>
+  //       </tr>
+  //       <tr>
+  //         <td style="${L}">Scan-to-Folder</td><td style="${C};text-align:right">${yn("scan_folder")}</td>
+  //         <td style="${L}">Fax Configured</td><td style="${C};text-align:right">${yn("fax_configured")}</td>
+  //       </tr>
+  //     </tbody></table>`
+  //   : ""
+  const mfpSection = ""
 
-  const photocopierSection = deviceType === "photocopier"
-    ? `<table style="margin-top:3px">${cols}<tbody>
-        <tr><td colspan="4" style="${S}">PHOTOCOPIER DETAILS</td></tr>
-        <tr>
-          <td style="${L}">Counter Reading</td><td style="${V}">${tf("counter_reading")}</td>
-          <td style="${L}">Toner Level</td><td style="${C}">${tf("toner_level")}</td>
-        </tr>
-      </tbody></table>`
-    : ""
+  // PHOTOCOPIER DETAILS — disabled
+  // const photocopierSection = deviceType === "photocopier"
+  //   ? `<table style="margin-top:3px">${cols}<tbody>
+  //       <tr><td colspan="4" style="${S}">PHOTOCOPIER DETAILS</td></tr>
+  //       <tr>
+  //         <td style="${L}">Counter Reading</td><td style="${V}">${tf("counter_reading")}</td>
+  //         <td style="${L}">Toner Level</td><td style="${C}">${tf("toner_level")}</td>
+  //       </tr>
+  //     </tbody></table>`
+  //   : ""
+  const photocopierSection = ""
 
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -438,24 +414,19 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
     </tr>
     <tr>
       <td style="${L}">Name of User</td><td style="${C}">${tf("contact_person")}</td>
-      <td style="${L}">Room No.</td><td style="${C}">${tf("room_no")}</td>
+      <td style="${L}">Room No / Room Name</td><td style="${C}">${tf("room_no")}</td>
     </tr>
   </tbody></table>
 
   <table style="margin-top:3px">${cols}<tbody>
     <tr><td colspan="4" style="${S}">DEVICE CONFIGURATION</td></tr>
     <tr>
-      <td style="${L}">Driver Version</td><td style="${C}">${tf("driver_version")}</td>
       <td style="${L}">Connectivity</td><td style="${C}">${rg("connectivity", ["USB", "WiFi", "Network"])}</td>
+      <td style="${L}">Paper Size</td><td style="${C}">${rg("paper_size", ["A4", "A3"])}</td>
     </tr>
-    <tr>
-      <td style="${L}">IP Address</td><td style="${C}">${tf("ip_address")}</td>
-      <td style="${L}">Paper Size</td><td style="${C}">${rg("paper_size", ["A4", "A3", "Legal"])}</td>
-    </tr>
-    <tr>
-      <td style="${L}">Print Resolution</td><td style="${C}">${tf("print_resolution")}</td>
-      <td style="${L}">Toner / Ink Model</td><td style="${C}">${tf("toner_model")}</td>
-    </tr>
+    ${deviceType !== "scanner" ? `<tr>
+      <td style="${L}">Toner / Ink Model</td><td colspan="3" style="${C}">${tf("toner_model")}</td>
+    </tr>` : ""}
   </tbody></table>
 
   ${mfpSection}
@@ -468,11 +439,6 @@ export function buildPrinterPrintHtml(fillValues, template, deviceType = "printe
       ${checkRows}
     </tbody>
   </table>
-
-  <table style="margin-top:3px"><tbody>
-    <tr><td style="${S}">REMARKS</td></tr>
-    <tr><td style="${C};height:42px">${tf("remarks")}</td></tr>
-  </tbody></table>
 
   <table style="margin-top:3px">${cols}<tbody>
     <tr>

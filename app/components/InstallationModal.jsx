@@ -11,6 +11,7 @@ import {
   TEMPLATES, getBrandTheme, normalizeData,
   generatePrintHtml, openPrintWindow,
 } from "./PrintTemplates";
+import { buildHpPrintHtml, HP_TEMPLATE } from "./HpInstallReport";
 import BarcodeScanner from "./BarcodeScanner";
 
 const inputClass =
@@ -99,7 +100,7 @@ const PRINTER_TRAINING = [
   { id: "tr_printout",    label: "Printout Demonstration" },
 ];
 
-const REPORT_CATS = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier"]);
+const REPORT_CATS = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier", "photocopy"]);
 
 export default function InstallationModal({ show, onClose, products, branches, installations = [], category = "PC" }) {
   const router = useRouter();
@@ -118,6 +119,9 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
   const isUPS = category === "UPS";
   const isSinglePrinter = category === "Single Printer";
+  const isMultiFunctionPrinter = category === "Multi-Function Printer";
+  const isPrinterType = isSinglePrinter || isMultiFunctionPrinter
+    || category === "Scanner" || category === "Photocopier";
   const LINK_PC_CATEGORIES = new Set(["UPS", "Single Printer", "Multi-Function Printer", "Scanner", "Photocopier"]);
   const needsPcLink = LINK_PC_CATEGORIES.has(category);
 
@@ -132,10 +136,12 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
   const isPC = category === "PC";
 
+  // "PhotoCopy" in DB is displayed as "Photocopier" in the UI — normalize before comparing
+  const normalizeCategory = (cat) => cat === "PhotoCopy" ? "Photocopier" : (cat || "");
   const availableProducts =
     category === "PC"
-      ? (products?.filter((p) => p.category === "PC" && p.status !== "installed") || [])
-      : (products?.filter((p) => p.category === category && p.status !== "installed") || []);
+      ? (products?.filter((p) => normalizeCategory(p.category).toLowerCase() === "pc" && p.status !== "installed") || [])
+      : (products?.filter((p) => normalizeCategory(p.category).toLowerCase() === category.toLowerCase() && p.status !== "installed") || []);
 
   const filteredProducts = snQuery.trim()
     ? availableProducts.filter((p) => {
@@ -158,7 +164,7 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
   // Auto-fill printer fields from linked PC installation
   useEffect(() => {
-    if (!linkedPcId || !isSinglePrinter) return;
+    if (!linkedPcId || !isPrinterType) return;
     const linked = pcInstallations.find((i) => i.id === linkedPcId);
     if (!linked) return;
     const cf = linked.custom_fields || {};
@@ -204,13 +210,24 @@ export default function InstallationModal({ show, onClose, products, branches, i
         c1: "", c3: "", c4: "", c5: "", c7: "",
       });
     }
+
+    if (isPrinterType) {
+      const pf = product.custom_fields || {};
+      setPrinterFields((prev) => ({
+        ...prev,
+        name_of_user: pf.name_of_user  || pf.contact_person || "",
+        tel_no:       pf.tel_no        || pf.mobile_no       || "",
+        email_admin:  pf.email_admin   || pf.email           || pf.email_id || "",
+        room_no:      pf.room_no       || "",
+      }));
+    }
   };
 
   const clearProduct = () => {
     setSelectedProduct(null);
     setSnQuery("");
     if (isPC) setPcFields(EMPTY_PC);
-    if (isSinglePrinter) setPrinterFields(EMPTY_PRINTER);
+    if (isPrinterType) setPrinterFields(EMPTY_PRINTER);
     if (needsPcLink) setLinkedPcId("");
   };
 
@@ -300,8 +317,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
         });
       }
 
-      // Merge Single Printer fields
-      if (isSinglePrinter) {
+      // Merge Single / Multi-Function Printer fields
+      if (isPrinterType) {
         const spf = selectedProduct.custom_fields || {};
         Object.assign(mergedCF, {
           // Auto-fill from product
@@ -370,16 +387,113 @@ export default function InstallationModal({ show, onClose, products, branches, i
       await supabase.from("products").update({ status: "installed" }).eq("id", selectedProduct.id);
       await supabase.from("dispatch_items").update({ status: "installed" }).eq("product_id", selectedProduct.id);
 
-      setSavedInstallation({
-        ...instData,
-        productName:     selectedProduct.name,
-        productBrand:    selectedProduct.brand || "",
-        productCategory: selectedProduct.category || "",
-        serialNumber:    selectedProduct.serial_number || "",
-        branchName:      branches?.find((b) => b.id === branchId)?.name || "",
-      });
+      // EMAIL DISABLED — uncomment when SMTP is configured and working
+      // const emailTo =
+      //   mergedCF.email || mergedCF.email_admin || mergedCF.email_id ||
+      //   (linkedPcId && pcInstallations.find(i => i.id === linkedPcId)?.custom_fields?.email) ||
+      //   "";
+      // if (emailTo && instData?.id) {
+      //   try {
+      //     const linkedPc = pcInstallations.find(i => i.id === linkedPcId);
+      //     const pcCf = linkedPc?.custom_fields || {};
+      //     const pcProduct = linkedPc?.products || {};
+      //     const reportFillValues = isPC ? {
+      //       department_name: mergedCF.department_name || "",
+      //       model_no: selectedProduct.name || "",
+      //       mc_serial: selectedProduct.serial_number || "",
+      //       device_brand: selectedProduct.brand || "",
+      //       install_date: instData.installation_date || "",
+      //       address: mergedCF.address || "",
+      //       tel_no: mergedCF.tel_no || "",
+      //       email: mergedCF.email || "",
+      //       contact_person: mergedCF.contact_person || "",
+      //       room_no: mergedCF.room_no || "",
+      //       win_key: instData.windows_key || "",
+      //       win_version: mergedCF.win_version || "",
+      //       win_activation: mergedCF.win_activation || "",
+      //       office_key: instData.ms_office_key || "",
+      //       office_version: mergedCF.office_version || "",
+      //       office_activation: mergedCF.office_activation || "",
+      //       av_key: instData.antivirus_key || "",
+      //       av_name: mergedCF.av_name || "",
+      //       av_validity: mergedCF.av_validity || "",
+      //       av_activation: mergedCF.av_activation || "",
+      //       c1: mergedCF.c1 || "yes", c3: mergedCF.c3 || "yes",
+      //       c4: mergedCF.c4 || "yes", c5: mergedCF.c5 || "yes", c7: mergedCF.c7 || "yes",
+      //       remarks: mergedCF.remarks || "",
+      //       service_date: mergedCF.service_date || instData.installation_date || "",
+      //       cust_signing: mergedCF.cust_signing || "",
+      //       ups_model: selectedProduct.category === "UPS" ? selectedProduct.name : "",
+      //       ups_brand: selectedProduct.category === "UPS" ? selectedProduct.brand : "",
+      //       ups_serial: selectedProduct.category === "UPS" ? selectedProduct.serial_number : "",
+      //       ups_warranty: selectedProduct.category === "UPS" ? "3 Years" : "",
+      //       ups_install_date: selectedProduct.category === "UPS" ? instData.installation_date : "",
+      //     } : linkedPc ? {
+      //       department_name: pcCf.department_name || linkedPc.customer_name || "",
+      //       model_no: pcProduct.name || "",
+      //       mc_serial: pcProduct.serial_number || "",
+      //       device_brand: pcProduct.brand || "",
+      //       install_date: linkedPc.installation_date?.split("T")[0] || "",
+      //       address: pcCf.address || "",
+      //       tel_no: pcCf.tel_no || pcCf.mobile_no || "",
+      //       email: pcCf.email || "",
+      //       contact_person: pcCf.contact_person || pcCf.name_of_user || "",
+      //       room_no: pcCf.room_no || "",
+      //       win_key: linkedPc.windows_key || "",
+      //       win_version: pcCf.win_version || "",
+      //       win_activation: pcCf.win_activation || "",
+      //       office_key: linkedPc.ms_office_key || "",
+      //       office_version: pcCf.office_version || "",
+      //       office_activation: pcCf.office_activation || "",
+      //       av_key: linkedPc.antivirus_key || "",
+      //       av_name: pcCf.av_name || "",
+      //       av_validity: pcCf.av_validity || "",
+      //       av_activation: pcCf.av_activation || "",
+      //       c1: "yes", c3: "yes", c4: "yes", c5: "yes", c7: "yes",
+      //       remarks: pcCf.remarks || "",
+      //       service_date: instData.installation_date || "",
+      //       cust_signing: pcCf.cust_signing || pcCf.contact_person || "",
+      //       ups_model: selectedProduct.name || "",
+      //       ups_brand: selectedProduct.brand || "",
+      //       ups_serial: selectedProduct.serial_number || "",
+      //       ups_warranty: "3 Years",
+      //       ups_install_date: instData.installation_date || "",
+      //     } : null;
+      //     if (reportFillValues) {
+      //       const reportHtml = buildHpPrintHtml(reportFillValues, HP_TEMPLATE);
+      //       fetch("/api/send-report", {
+      //         method: "POST",
+      //         headers: { "Content-Type": "application/json" },
+      //         body: JSON.stringify({
+      //           to: emailTo,
+      //           subject: `Installation Report — ${selectedProduct.name} — Rangayan Creations`,
+      //           html: reportHtml,
+      //           installationId: instData.id,
+      //         }),
+      //         signal: AbortSignal.timeout(10_000),
+      //       }).catch((err) => console.warn("Report email failed:", err.message));
+      //     }
+      //   } catch (emailErr) {
+      //     console.warn("Report email failed:", emailErr.message);
+      //   }
+      // }
 
-      startTransition(() => router.refresh());
+      const productCategory = (selectedProduct.category || "").toLowerCase();
+      if (REPORT_CATS.has(productCategory)) {
+        // Navigate directly to report page — skip the success modal
+        handleClose();
+        startTransition(() => router.push(`/installations/${instData.id}`));
+      } else {
+        setSavedInstallation({
+          ...instData,
+          productName:     selectedProduct.name,
+          productBrand:    selectedProduct.brand || "",
+          productCategory: selectedProduct.category || "",
+          serialNumber:    selectedProduct.serial_number || "",
+          branchName:      branches?.find((b) => b.id === branchId)?.name || "",
+        });
+        startTransition(() => router.refresh());
+      }
     } catch (err) {
       console.error("Installation recording failed:", err);
       alert("Failed to record installation: " + err.message);
@@ -546,7 +660,7 @@ export default function InstallationModal({ show, onClose, products, branches, i
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className={`bg-white rounded-2xl p-6 mx-4 my-auto overflow-hidden w-full ${isSinglePrinter ? "max-w-2xl" : "max-w-lg"}`}
+          className={`bg-white rounded-2xl p-6 mx-4 my-auto overflow-hidden w-full ${isPrinterType ? "max-w-2xl" : "max-w-lg"}`}
         >
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold font-[var(--font-display)]">Record {category} Installation</h2>
@@ -697,8 +811,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
               </div>
             )}
 
-            {/* ── Single Printer fields ── */}
-            {isSinglePrinter && selectedProduct && (
+            {/* ── Single / Multi-Function Printer fields ── */}
+            {isPrinterType && selectedProduct && (
               <div className="space-y-4 border-t border-[#E2E4F0] pt-4">
 
                 {/* User Details */}

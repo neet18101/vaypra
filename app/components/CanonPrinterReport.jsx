@@ -20,23 +20,12 @@ export const CANON_TEMPLATE = {
 
 const TRAINING_ITEMS = [
   { id: "tr_doc_align",   label: "Document Alignment" },
-  { id: "tr_media",       label: "Media Loading" },
-  { id: "tr_ctrl_panel",  label: "Control Panel Operation" },
-  { id: "tr_manual_feed", label: "Manual Feed" },
-  { id: "tr_two_side",    label: "Two Sided Printing" },
-  { id: "tr_warming",     label: "Warming Up Time" },
-  { id: "tr_toner_rep",   label: "Toner Replacement" },
   { id: "tr_waste_toner", label: "Waste Toner Replacement" },
-  { id: "tr_paper_jam",   label: "Paper Jam Clearance" },
-  { id: "tr_routine",     label: "Routine Cleaning" },
   { id: "tr_driver",      label: "Driver Installation" },
-  { id: "tr_call_log",    label: "Call Logging Procedure" },
-  { id: "tr_dos_donts",   label: "Do's & Don'ts" },
-  { id: "tr_printout",    label: "Printout Demonstration" },
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill }) {
+export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill, title }) {
   const v = (id) => String(fillValues[id] ?? "")
   const r = (id, ch) => fillValues[id] === ch
 
@@ -132,7 +121,7 @@ export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill }) {
       <table style={tbl}>
         <tbody>
           {/* Title */}
-          <tr><td colSpan={4} style={titleTd}>{CANON_TEMPLATE.report_title}</td></tr>
+          <tr><td colSpan={4} style={titleTd}>{title || CANON_TEMPLATE.report_title}</td></tr>
 
           {/* ── Customer & Machine Info ── */}
           <tr>
@@ -229,26 +218,6 @@ export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill }) {
             </tr>
           ))}
 
-          {/* ── Remarks ── */}
-          <tr><td colSpan={4} style={sectionTd}>REMARKS</td></tr>
-          <tr>
-            <td colSpan={4} style={{ ...cellTd, height: 36 }}>
-              {mode === "fill"
-                ? <input type="text" value={v("remarks")} onChange={(e) => onFill("remarks", e.target.value)} style={{ ...inp, height: 28 }} />
-                : <span style={{ display: "block" }}>{v("remarks") || ""}</span>}
-            </td>
-          </tr>
-
-          {/* ── Certification + Signing ── */}
-          <tr>
-            <td colSpan={4} style={{ ...cellTd, fontSize: 9, fontStyle: "italic", color: "#666", background: "#fffef4" }}>
-              I / We hereby certify that the above machine has been installed, configured, and demonstrated to the satisfaction of the customer. All items covered in training have been explained.
-            </td>
-          </tr>
-          <tr>
-            <td style={labelTd}>Customer Signature / Name</td>
-            <td colSpan={3} style={{ ...cellTd, height: 42 }}>{tf("cust_signing")}</td>
-          </tr>
         </tbody>
       </table>
 
@@ -280,7 +249,7 @@ export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill }) {
 }
 
 // ─── Print HTML builder (A4-optimised) ───────────────────────────────────────
-export function buildCanonPrintHtml(fillValues) {
+export function buildCanonPrintHtml(fillValues, title) {
   const v   = (id) => String(fillValues[id] ?? "")
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   const sel = (id, ch) => fillValues[id] === ch
@@ -369,7 +338,7 @@ export function buildCanonPrintHtml(fillValues) {
 </div>
 
 <table style="margin-bottom:3px">
-  <tr><td style="${T}">INSTALLATION REPORT</td></tr>
+  <tr><td style="${T}">${title || "INSTALLATION REPORT"}</td></tr>
 </table>
 
 <table>
@@ -417,21 +386,6 @@ export function buildCanonPrintHtml(fillValues) {
 </table>
 
 <table style="margin-top:3px">
-  <tbody>
-    <tr><td style="${S}">REMARKS</td></tr>
-    <tr><td style="${C};height:42px">${tf("remarks")}</td></tr>
-    <tr><td style="${C};font-size:9px;font-style:italic;color:#666;background:#fffef4">I / We hereby certify that the above machine has been installed, configured, and demonstrated to the satisfaction of the customer. All items covered in training have been explained.</td></tr>
-  </tbody>
-</table>
-
-<table style="margin-top:3px">
-  <colgroup><col style="width:17%"><col></colgroup>
-  <tbody>
-    <tr><td style="${L}">Customer Signature / Name</td><td style="${C};height:44px">${tf("cust_signing")}</td></tr>
-  </tbody>
-</table>
-
-<table style="margin-top:3px">
   <colgroup><col style="width:17%"><col style="width:33%"><col style="width:17%"><col style="width:33%"></colgroup>
   <tbody>
     <tr>
@@ -453,8 +407,8 @@ export function buildCanonPrintHtml(fillValues) {
 }
 
 // ─── Print opener ─────────────────────────────────────────────────────────────
-export function printCanonForm(fillValues) {
-  const html = buildCanonPrintHtml(fillValues)
+export function printCanonForm(fillValues, title) {
+  const html = buildCanonPrintHtml(fillValues, title)
   const win  = window.open("", "_blank")
   if (!win) return
   win.document.write(html)

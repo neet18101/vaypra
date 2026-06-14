@@ -144,7 +144,7 @@ export function HpInstallReport({ template, mode, fillValues, onFill }) {
           </tr>
           <tr>
             <td style={labelC}>Name of User</td><td style={cell}>{tf("contact_person")}</td>
-            <td style={labelC}>Room No.</td><td style={cell}>{tf("room_no")}</td>
+            <td style={labelC}>Room No / Room Name</td><td style={cell}>{tf("room_no")}</td>
           </tr>
 
           <tr><td colSpan={4} style={sectionC}>License / Product Keys</td></tr>
@@ -374,7 +374,7 @@ export function buildHpPrintHtml(fillValues, template) {
       </tr>
       <tr>
         <td style="${L}">Name of User</td><td style="${C}">${tf("contact_person")}</td>
-        <td style="${L}">Room No.</td><td style="${C}">${tf("room_no")}</td>
+        <td style="${L}">Room No / Room Name</td><td style="${C}">${tf("room_no")}</td>
       </tr>
     </tbody>
   </table>

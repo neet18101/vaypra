@@ -33,8 +33,9 @@ function getDeviceType(category) {
   switch ((category || "").toLowerCase()) {
     case "single printer":         return "canon"
     case "multi-function printer": return "mfp"
-    case "scanner":                return "mfp"
-    case "photocopier":            return "photocopier"
+    case "scanner":                return "scanner"
+    case "photocopier":
+    case "photocopy":              return "photocopier"   // DB stores "PhotoCopy"
     default:                       return null
   }
 }
@@ -43,7 +44,8 @@ function getPrinterTemplate(category) {
   switch ((category || "").toLowerCase()) {
     case "multi-function printer": return MFP_TEMPLATE
     case "scanner":                return SCANNER_TEMPLATE
-    case "photocopier":            return PHOTOCOPIER_TEMPLATE
+    case "photocopier":
+    case "photocopy":              return PHOTOCOPIER_TEMPLATE
     default:                       return MFP_TEMPLATE
   }
 }
@@ -121,6 +123,7 @@ function buildPrinterFillValues(installation) {
   const cf  = installation.custom_fields || {};
   const p   = installation.products || {};
   const pcf = p.custom_fields || {};
+  const contact_person = cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "";
   return {
     install_date:    installation.installation_date?.split("T")[0] || "",
     department_name: cf.department_name || pcf.department_name || installation.customer_name || "",
@@ -129,8 +132,8 @@ function buildPrinterFillValues(installation) {
     device_brand:    p.brand || "",
     address:         cf.address  || pcf.address  || "",
     tel_no:          cf.tel_no   || cf.mobile_no || pcf.tel_no || pcf.mobile_no || "",
-    email:           cf.email    || cf.email_id  || pcf.email  || pcf.email_id  || "",
-    contact_person:  cf.contact_person || cf.name_of_user || pcf.contact_person || pcf.name_of_user || "",
+    email:           cf.email    || cf.email_admin || cf.email_id  || pcf.email  || pcf.email_id  || "",
+    contact_person,
     room_no:         cf.room_no  || pcf.room_no  || "",
     // Device config
     driver_version:  cf.driver_version  || "",
@@ -153,7 +156,7 @@ function buildPrinterFillValues(installation) {
     // Remarks / signing
     remarks:      cf.remarks      || "",
     service_date: cf.service_date || new Date().toISOString().split("T")[0],
-    cust_signing: cf.cust_signing || "",
+    cust_signing: cf.cust_signing || contact_person,
   };
 }
 
@@ -196,7 +199,7 @@ function buildCanonFillValues(installation) {
     env_power: cf.env_power || "", env_ac: cf.env_ac || "",
     // Signing
     service_date: cf.service_date || new Date().toISOString().split("T")[0],
-    cust_signing: cf.cust_signing || cf.contact_person || pcf.contact_person || "",
+    cust_signing: cf.cust_signing || cf.name_of_user || cf.contact_person || pcf.contact_person || "",
     remarks:      cf.remarks      || "",
   };
 }
@@ -217,7 +220,7 @@ export default function InstallationReportView({ installation, branchName, linke
   const isPC       = category.toLowerCase() === "pc";
   const deviceType = getDeviceType(category);            // null for UPS / unknown
   const isCanon    = deviceType === "canon";             // Single Printer → Canon report
-  const isPrinter  = deviceType !== null && !isCanon;   // mfp / photocopier
+  const isPrinter  = deviceType !== null && !isCanon;   // mfp / scanner / photocopier
   const printerTemplate = getPrinterTemplate(category);
 
   const [fillValues, setFillValues] = useState(() =>
@@ -232,7 +235,7 @@ export default function InstallationReportView({ installation, branchName, linke
   function handleFill(id, val) {
     setFillValues((prev) => {
       const next = { ...prev, [id]: val };
-      if (id === "contact_person" || id === "contact_admin") next.cust_signing = val;
+      if (id === "contact_person" || id === "contact_admin" || id === "name_of_user") next.cust_signing = val;
       return next;
     });
     setSaved(false);
