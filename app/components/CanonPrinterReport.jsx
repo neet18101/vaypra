@@ -167,35 +167,11 @@ export function CanonPrinterReport({ mode = "view", fillValues = {}, onFill, tit
             </td>
           </tr>
 
-          {/* ── Toner Bottle Counter ── */}
-          <tr><td colSpan={4} style={sectionTd}>TONER BOTTLE COUNTER</td></tr>
+          {/* ── Toner / Ink Model ── */}
           <tr>
-            {["71", "72", "73", "74"].map((n) => (
-              <td key={n} style={thTd}>{n}</td>
-            ))}
+            <td style={labelTd}>Toner / Ink Model</td>
+            <td colSpan={3} style={valueTd}>{tf("toner_model", { placeholder: "e.g. Canon 052 / HP 85A" })}</td>
           </tr>
-          <tr>
-            {["71", "72", "73", "74"].map((n) => (
-              <td key={n} style={{ ...cellTd, textAlign: "center" }}>{tf(`toner_${n}`)}</td>
-            ))}
-          </tr>
-
-          {/* ── Meter Reading ── */}
-          <tr><td colSpan={4} style={sectionTd}>METER READING</td></tr>
-          <tr>
-            <td style={thTd}>Type</td>
-            <td style={thTd}>Large</td>
-            <td style={thTd}>Small</td>
-            <td style={thTd}>XL</td>
-          </tr>
-          {[["Black", "black"], ["Color", "color"]].map(([label, key]) => (
-            <tr key={key}>
-              <td style={{ ...cellTd, fontWeight: 600, background: "#f4f4f4" }}>{label}</td>
-              <td style={cellTd}>{tf(`meter_${key}_large`)}</td>
-              <td style={cellTd}>{tf(`meter_${key}_small`)}</td>
-              <td style={cellTd}>{tf(`meter_${key}_xl`)}</td>
-            </tr>
-          ))}
 
           {/* ── Power Supply ── */}
           <tr>
@@ -350,22 +326,7 @@ export function buildCanonPrintHtml(fillValues, title) {
     <tr><td style="${L}">Mobile Number</td><td style="${C}">${tf("tel_no")}</td><td style="${L}">Installation Date</td><td style="${C}">${tf("install_date", true)}</td></tr>
     <tr><td style="${L}">Email</td><td style="${C}">${tf("email_admin")}</td><td style="${L}">Warranty Period</td><td style="${C}"><strong>3 Years</strong></td></tr>
     <tr><td style="${L}">Room No / Room Name</td><td style="${C}">${tf("room_no")}</td><td style="${L}">Warranty Expiry Date</td><td style="${C}">${warrantyExpiry}</td></tr>
-  </tbody>
-</table>
-
-<table style="margin-top:3px">
-  <tbody>
-    <tr><td colspan="4" style="${S}">TONER BOTTLE COUNTER</td></tr>
-    <tr>${["71","72","73","74"].map((n) => `<th style="${TH};width:25%">${n}</th>`).join("")}</tr>
-    <tr>${tonerRow}</tr>
-  </tbody>
-</table>
-
-<table style="margin-top:3px">
-  <tbody>
-    <tr><td colspan="4" style="${S}">METER READING</td></tr>
-    <tr><th style="${TH};width:20%">Type</th><th style="${TH};width:27%">Large</th><th style="${TH};width:27%">Small</th><th style="${TH};width:26%">XL</th></tr>
-    ${meterRows}
+    <tr><td style="${L}">Toner / Ink Model</td><td colspan="3" style="${C}">${tf("toner_model")}</td></tr>
   </tbody>
 </table>
 

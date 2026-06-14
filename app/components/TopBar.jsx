@@ -65,17 +65,6 @@ export default function TopBar({ sidebarOpen, setSidebarOpen }) {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E17055] border-2 border-white" />
         </button>
 
-        <Link href="/invoices">
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-[10px] text-white border-none cursor-pointer text-[13px] font-semibold"
-            style={{ background: "linear-gradient(135deg, #6C5CE7, #5A4BD1)", boxShadow: "0 4px 15px rgba(108,92,231,0.3)" }}
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline">New Invoice</span>
-          </motion.button>
-        </Link>
       </div>
     </header>
   );
