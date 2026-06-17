@@ -341,7 +341,7 @@ export default function Home() {
       <section id="features" className="rk-features">
         <div className="rk-features-inner">
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span className="rk-section-label">What's Inside</span>
+            <span className="rk-section-label">What&apos;s Inside</span>
             <h2 className="rk-h2">Everything Your Team Needs</h2>
             <p className="rk-section-p">No generic software. Purpose-built for how Rangayan Creations operates every day.</p>
           </div>

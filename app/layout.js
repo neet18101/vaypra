@@ -36,6 +36,14 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#0066CC",
+  width: "device-width",
+  initialScale: 1,
+  // Draw under the notch / home indicator so the standalone PWA feels native.
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html
@@ -43,7 +51,7 @@ export default function RootLayout({ children }) {
       className={`${dmSans.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <head>
-        <meta name="theme-color" content="#0066CC" />
+        {/* theme-color is provided by the viewport export above */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

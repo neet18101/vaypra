@@ -211,13 +211,13 @@ export default function InstallationsContent({ installations, products, branches
               const isExpanded = expandedRow === installation.id;
               const branchName = branches.find((b) => b.id === installation.branch_id)?.name || "";
               const cf = installation.custom_fields || {};
-              const dept = cf.department_name || installation.customer_name || "—";
+              const dept = cf.department_name || cf.linked_pc_dept || installation.customer_name || "—";
               return (
                 <motion.div
                   key={installation.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03 }}
+                  transition={{ duration: 0.15, delay: Math.min(idx * 0.02, 0.25) }}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition-transform"
                 >
                   {/* Card header — tap to view report */}
@@ -361,10 +361,13 @@ export default function InstallationsContent({ installations, products, branches
                     Date
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Branch
+                    Department
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Recorded By
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Actions
@@ -374,17 +377,18 @@ export default function InstallationsContent({ installations, products, branches
               <tbody>
                 {filteredInstallations.map((installation, index) => {
                   const isExpanded = expandedRow === installation.id;
-                  const branchName =
-                    branches.find((b) => b.id === installation.branch_id)?.name || "Unknown";
                   const cf = installation.custom_fields || {};
                   const cfKeys = Object.keys(cf);
+                  // Linked devices (UPS, printers, etc.) inherit the department of
+                  // the PC they're attached to, stored as linked_pc_dept.
+                  const department = cf.department_name || cf.linked_pc_dept || installation.customer_name || "—";
 
                   return (
                     <React.Fragment key={installation.id || index}>
                       <motion.tr
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
+                        transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.25) }}
                         className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                       >
                         <td className="py-3.5 px-4">
@@ -412,10 +416,13 @@ export default function InstallationsContent({ installations, products, branches
                           {formatDate(installation.installation_date)}
                         </td>
                         <td className="py-3.5 px-4 text-sm text-gray-600">
-                          {branchName}
+                          {department}
                         </td>
                         <td className="py-3.5 px-4">
                           <StatusBadge status={installation.status} />
+                        </td>
+                        <td className="py-3.5 px-4 text-sm text-gray-600">
+                          {installation.installer_name || "—"}
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1">

@@ -85,6 +85,54 @@ export default function BarcodeScanner({ onDetected, onClose }) {
   const [candidates, setCandidates] = useState(null);         // null=scanning, array=results
   const [picked, setPicked]         = useState("");
 
+  /* ── scan helpers (declared before the effect that calls them) ── */
+  function stopAndShow(vals) {
+    clearInterval(timerRef.current);
+    setCandidates(vals);
+    setPicked(vals[0] ?? "");
+  }
+
+  async function doScan() {
+    if (!alive.current || scanning.current) return;
+    const video  = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < 2) return;
+
+    scanning.current = true;
+    try {
+      // Crop to scan-box area only and boost contrast
+      cropAndEnhance(video, canvas);
+
+      // 1. BarcodeDetector (fast)
+      if (barDetRef.current) {
+        try {
+          const codes = await barDetRef.current.detect(canvas);
+          if (codes.length > 0) {
+            stopAndShow([codes[0].rawValue]);
+            return;
+          }
+        } catch { /* fall through */ }
+      }
+
+      // 2. Tesseract OCR
+      if (workerRef.current) {
+        const { data } = await workerRef.current.recognize(canvas);
+        if (!alive.current) return;
+        const found = parseSerials(data.text);
+        if (found.length > 0) {
+          stopAndShow(found);
+        }
+      }
+    } catch { /* frame error — keep going */ }
+    finally { scanning.current = false; }
+  }
+
+  /* ── auto scan every 2 s ──────────────────────────────────────── */
+  function startAutoScan() {
+    timerRef.current = setInterval(doScan, 2000);
+    doScan(); // also run immediately
+  }
+
   /* ── init: camera + warm-up worker ───────────────────────────── */
   useEffect(() => {
     alive.current = true;
@@ -155,53 +203,6 @@ export default function BarcodeScanner({ onDetected, onClose }) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  /* ── auto scan every 2 s ──────────────────────────────────────── */
-  function startAutoScan() {
-    timerRef.current = setInterval(doScan, 2000);
-    doScan(); // also run immediately
-  }
-
-  async function doScan() {
-    if (!alive.current || scanning.current) return;
-    const video  = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) return;
-
-    scanning.current = true;
-    try {
-      // Crop to scan-box area only and boost contrast
-      cropAndEnhance(video, canvas);
-
-      // 1. BarcodeDetector (fast)
-      if (barDetRef.current) {
-        try {
-          const codes = await barDetRef.current.detect(canvas);
-          if (codes.length > 0) {
-            stopAndShow([codes[0].rawValue]);
-            return;
-          }
-        } catch { /* fall through */ }
-      }
-
-      // 2. Tesseract OCR
-      if (workerRef.current) {
-        const { data } = await workerRef.current.recognize(canvas);
-        if (!alive.current) return;
-        const found = parseSerials(data.text);
-        if (found.length > 0) {
-          stopAndShow(found);
-        }
-      }
-    } catch { /* frame error — keep going */ }
-    finally { scanning.current = false; }
-  }
-
-  function stopAndShow(vals) {
-    clearInterval(timerRef.current);
-    setCandidates(vals);
-    setPicked(vals[0] ?? "");
-  }
 
   function resumeScan() {
     setCandidates(null);

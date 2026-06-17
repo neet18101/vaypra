@@ -95,7 +95,11 @@ export default function DashboardContent({ stats, recentTransactions, lifecycleC
   const [greeting, setGreeting] = useState("Good Morning");
   const [currentDate, setCurrentDate] = useState("");
 
+  // Greeting & date depend on the user's local clock, so they must be set
+  // on the client AFTER mount — computing them during SSR/initial render would
+  // cause a hydration mismatch. This is the intended pattern here.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(getGreeting());
     setCurrentDate(
       new Date().toLocaleDateString("en-IN", {

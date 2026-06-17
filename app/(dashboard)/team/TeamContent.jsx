@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { UserPlus, Trash2, Wrench, Mail, Lock, User, X, Check, AlertCircle } from "lucide-react";
 import Card from "@/app/components/Card";
 
-export default function TeamContent() {
+export default function TeamContent({ embedded = false }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -15,13 +15,15 @@ export default function TeamContent() {
   const [success, setSuccess] = useState("");
 
   const fetchMembers = useCallback(async () => {
-    setLoading(true);
     const res = await fetch("/api/admin/team");
     const data = await res.json();
     setMembers(data.members || []);
     setLoading(false);
   }, []);
 
+  // Canonical fetch-on-mount: state is only set after the awaited fetch
+  // resolves, so it does not cascade synchronous renders.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   async function handleCreate(e) {
@@ -43,6 +45,7 @@ export default function TeamContent() {
       setSuccess(`Installer "${form.email}" created successfully`);
       setForm({ email: "", password: "", name: "" });
       setShowForm(false);
+      setLoading(true);
       fetchMembers();
     }
     setSubmitting(false);
@@ -58,20 +61,24 @@ export default function TeamContent() {
     });
     const data = await res.json();
     if (!res.ok) setError(data.error || "Failed to remove member");
-    else fetchMembers();
+    else { setLoading(true); fetchMembers(); }
     setDeletingId(null);
   }
 
   const inp = "w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors";
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className={embedded ? "" : "max-w-2xl mx-auto"}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-[24px] font-extrabold font-[var(--font-display)]">Team</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage installer accounts</p>
-        </div>
+        {embedded ? (
+          <p className="text-sm text-gray-400">Add installers who can log in and record installations.</p>
+        ) : (
+          <div>
+            <h1 className="text-[24px] font-extrabold font-[var(--font-display)]">Team</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Manage installer accounts</p>
+          </div>
+        )}
         <button
           onClick={() => { setShowForm(true); setError(""); setSuccess(""); }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-semibold shadow-md hover:shadow-lg transition-shadow"

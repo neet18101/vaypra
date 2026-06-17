@@ -11,14 +11,16 @@ const STEPS = [
 
 export default function PwaInstallSection() {
   const [prompt, setPrompt]       = useState(null);
-  const [installed, setInstalled] = useState(false);
+  const [installed, setInstalled] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(display-mode: standalone)").matches === true
+  );
   const [loading, setLoading]     = useState(false);
 
   useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setInstalled(true);
-      return;
-    }
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
     const handler = (e) => { e.preventDefault(); setPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", () => setInstalled(true));

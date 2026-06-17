@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, Shield } from "lucide-react";
+import { Building2, Shield, Users } from "lucide-react";
 import Card from "@/app/components/Card";
 import SectionTitle from "@/app/components/SectionTitle";
+import TeamContent from "@/app/(dashboard)/team/TeamContent";
 
-export default function SettingsContent({ profile }) {
+export default function SettingsContent({ profile, userRole }) {
   const [formData, setFormData] = useState({
     business_name: profile?.business_name || "",
     gstin: profile?.gstin || "",
@@ -184,6 +185,21 @@ export default function SettingsContent({ profile }) {
             </div>
           </Card>
         </motion.div>
+
+        {/* Team Members — admin only */}
+        {userRole === "admin" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-5"
+          >
+            <Card>
+              <SectionTitle icon={Users} title="Team Members" />
+              <TeamContent embedded />
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );

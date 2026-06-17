@@ -7,7 +7,7 @@ export async function POST(request) {
   const password = formData.get("password");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -19,5 +19,20 @@ export async function POST(request) {
     );
   }
 
-  return NextResponse.redirect(new URL("/dashboard", request.url), { status: 303 });
+  // Send installers straight to /installations (they can't use the rest of the
+  // dashboard). Routing them via /dashboard first makes DashboardShell do a
+  // client-side router.replace, which swaps the route mid-hydration and throws
+  // a hydration mismatch + "Connection closed".
+  let destination = "/dashboard";
+  const userId = signInData?.user?.id;
+  if (userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    if (profile?.role === "installer") destination = "/installations";
+  }
+
+  return NextResponse.redirect(new URL(destination, request.url), { status: 303 });
 }

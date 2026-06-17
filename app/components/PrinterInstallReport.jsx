@@ -15,7 +15,6 @@ const titleTd   = {
   letterSpacing: 4, fontSize: 14, padding: "7px",
   fontFamily: "'Segoe UI', Arial, sans-serif", color: "#0a3a6b", textTransform: "uppercase",
 }
-// eslint-disable-next-line react-compiler/react-compiler
 const inp = { width: "100%", border: "none", outline: "none", font: "inherit", background: "transparent", padding: "1px 0" }
 
 // ─── Inner report (pure render) ────────────────────────────────────────────

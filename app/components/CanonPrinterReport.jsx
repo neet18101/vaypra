@@ -7,7 +7,6 @@ const valueTd   = { ...cellTd, width: "32%" }
 const sectionTd = { ...cellTd, background: "#e0e4f0", fontWeight: 700, padding: "4px 6px", color: "#0a3a6b" }
 const titleTd   = { ...cellTd, textAlign: "center", background: "#dce8f5", fontWeight: 800, letterSpacing: 4, fontSize: 14, padding: "7px", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#0a3a6b", textTransform: "uppercase" }
 const thTd      = { ...cellTd, background: "#f0f2fa", fontWeight: 700, textAlign: "center", fontSize: 10 }
-// eslint-disable-next-line react-compiler/react-compiler
 const inp       = { width: "100%", border: "none", outline: "none", font: "inherit", background: "transparent", padding: "1px 0" }
 
 export const CANON_TEMPLATE = {

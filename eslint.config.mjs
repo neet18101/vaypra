@@ -10,6 +10,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Unused scratch/reference file (not imported anywhere in the app)
+    "UI_Refernce.jsx",
   ]),
 ]);
 

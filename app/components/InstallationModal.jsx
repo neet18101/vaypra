@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, startTransition } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine, Key, ClipboardList, Zap,
@@ -12,7 +13,17 @@ import {
   generatePrintHtml, openPrintWindow,
 } from "./PrintTemplates";
 import { buildHpPrintHtml, HP_TEMPLATE } from "./HpInstallReport";
-import BarcodeScanner from "./BarcodeScanner";
+
+// The scanner pulls in camera handling and (on use) tesseract.js OCR — keep it
+// out of the installations bundle and load it only when the user opens it.
+const BarcodeScanner = dynamic(() => import("./BarcodeScanner"), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center text-white text-sm">
+      Loading scanner…
+    </div>
+  ),
+});
 
 const inputClass =
   "w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors";
@@ -74,6 +85,7 @@ const EMPTY_PC = {
 
 const EMPTY_PRINTER = {
   name_of_user: "", tel_no: "", email_admin: "", room_no: "",
+  address: "", department_name: "",
   meter_black_large: "", meter_black_small: "", meter_black_xl: "",
   meter_color_large: "", meter_color_small: "", meter_color_xl: "",
   power_type: "None",
@@ -130,6 +142,21 @@ export default function InstallationModal({ show, onClose, products, branches, i
     (i) => i.products?.category?.toLowerCase() === "pc"
   );
 
+  // Location mismatch: compare branch of printer product vs linked PC product
+  const linkedPc = pcInstallations.find((i) => i.id === linkedPcId);
+  const locationMismatch = (() => {
+    if (!isPrinterType || !selectedProduct || !linkedPcId || !linkedPc) return false;
+    // Primary: compare branch_id
+    const printerBranch = selectedProduct?.branch_id;
+    const pcBranch      = linkedPc?.products?.branch_id || linkedPc?.branch_id;
+    if (printerBranch && pcBranch) return printerBranch !== pcBranch;
+    // Fallback: compare department_name (case-insensitive)
+    const printerDept = (selectedProduct?.custom_fields?.department_name || "").trim().toLowerCase();
+    const pcDept      = (linkedPc?.custom_fields?.department_name || "").trim().toLowerCase();
+    if (printerDept && pcDept) return printerDept !== pcDept;
+    return false;
+  })();
+
   const [savedInstallation, setSavedInstallation] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState("brand");
   const [showScanner, setShowScanner] = useState(false);
@@ -168,12 +195,16 @@ export default function InstallationModal({ show, onClose, products, branches, i
     const linked = pcInstallations.find((i) => i.id === linkedPcId);
     if (!linked) return;
     const cf = linked.custom_fields || {};
+    // Intentional: auto-fill printer fields when a linked PC is selected.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrinterFields((prev) => ({
       ...prev,
-      name_of_user: cf.contact_person || cf.name_of_user || prev.name_of_user || "",
-      tel_no:       cf.tel_no         || cf.mobile_no    || prev.tel_no       || "",
-      email_admin:  cf.email          || cf.email_id     || prev.email_admin  || "",
-      room_no:      cf.room_no        || prev.room_no    || "",
+      name_of_user:    cf.contact_person   || cf.name_of_user || prev.name_of_user    || "",
+      tel_no:          cf.tel_no           || cf.mobile_no    || prev.tel_no           || "",
+      email_admin:     cf.email            || cf.email_id     || prev.email_admin      || "",
+      room_no:         cf.room_no          || prev.room_no         || "",
+      address:         cf.address          || prev.address         || "",
+      department_name: cf.department_name  || linked.customer_name || prev.department_name || "",
     }));
   }, [linkedPcId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -270,13 +301,52 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
   const handleClose = () => { resetForm(); onClose(); };
 
+  // Returns an error message string if the form is invalid, otherwise null.
+  const validateForm = () => {
+    if (!selectedProduct) return "Please select a product before saving.";
+
+    // UPS ↔ PC is one-to-one: a UPS must be linked to a PC, and a given PC
+    // can have only one UPS attached.
+    if (isUPS) {
+      if (!linkedPcId) return "Please link this UPS to a PC — each UPS must be connected to one PC.";
+      const pcAlreadyHasUps = installations.some((i) =>
+        (i.products?.category || "").toUpperCase() === "UPS" &&
+        i.custom_fields?.linked_pc_installation_id === linkedPcId
+      );
+      if (pcAlreadyHasUps) return "This PC already has a UPS linked. Only one UPS per PC is allowed.";
+    }
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneDigits = (s) => (s || "").replace(/\D/g, "");
+
+    if (isPC) {
+      if (pcFields.email.trim() && !emailRe.test(pcFields.email.trim()))
+        return "Please enter a valid email address (e.g. user@example.com).";
+      if (pcFields.tel_no.trim() && phoneDigits(pcFields.tel_no).length < 7)
+        return "Please enter a valid mobile number.";
+    } else if (isPrinterType) {
+      if (printerFields.email_admin.trim() && !emailRe.test(printerFields.email_admin.trim()))
+        return "Please enter a valid email address (e.g. user@example.com).";
+      if (printerFields.tel_no.trim() && phoneDigits(printerFields.tel_no).length < 7)
+        return "Please enter a valid mobile number.";
+    }
+
+    // Custom fields: a name with no value (or vice-versa) is almost always a mistake.
+    const halfFilled = customFields.find((f) => (f.name.trim() && !f.value.trim()) || (!f.name.trim() && f.value.trim()));
+    if (halfFilled) return "Each additional field needs both a name and a value.";
+
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedProduct) return;
+    const validationError = validateForm();
+    if (validationError) { alert(validationError); return; }
     setSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Your session has expired. Please log in again.");
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -284,6 +354,20 @@ export default function InstallationModal({ show, onClose, products, branches, i
         .eq("id", user.id)
         .single();
       const orgId = profile?.current_organization_id;
+      if (!orgId) throw new Error("No active organization found for your account. Please re-login, or ask an admin to add you to an organization.");
+
+      // One UPS per PC — re-check live against the DB, not just the in-memory
+      // list (which can be stale if several UPS are recorded back-to-back).
+      if (isUPS && linkedPcId) {
+        const { data: linkedToPc } = await supabase
+          .from("installations")
+          .select("id, products(category)")
+          .eq("custom_fields->>linked_pc_installation_id", linkedPcId);
+        const pcHasUps = (linkedToPc || []).some(
+          (i) => (i.products?.category || "").toUpperCase() === "UPS"
+        );
+        if (pcHasUps) throw new Error("This PC already has a UPS linked. Only one UPS per PC is allowed.");
+      }
 
       const pcf = selectedProduct.custom_fields || {};
       // Fallback keys from product if PC fields are empty
@@ -321,9 +405,9 @@ export default function InstallationModal({ show, onClose, products, branches, i
       if (isPrinterType) {
         const spf = selectedProduct.custom_fields || {};
         Object.assign(mergedCF, {
-          // Auto-fill from product
-          department_name: spf.department_name || spf.name_of_user || "",
-          address:         spf.address || "",
+          // Prefer linked PC address/dept, fall back to product custom_fields
+          department_name: printerFields.department_name || spf.department_name || spf.name_of_user || "",
+          address:         printerFields.address         || spf.address         || "",
           // User-entered
           name_of_user:  printerFields.name_of_user,
           tel_no:        printerFields.tel_no,
@@ -366,12 +450,16 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
       const branchId = selectedProduct?.branch_id || selectedProduct?.dispatch?.branch_id || null;
 
+      // Record who logged this installation, so admins can see who did it.
+      const installerName = user.user_metadata?.full_name || user.email || "";
+
       const { data: instData, error: installError } = await supabase
         .from("installations")
         .insert({
           organization_id: orgId,
           product_id:      selectedProduct.id,
           branch_id:       branchId,
+          installer_name:  installerName,
           installation_date: new Date().toISOString().split("T")[0],
           windows_key:     winKey,
           ms_office_key:   offKey,
@@ -384,8 +472,12 @@ export default function InstallationModal({ show, onClose, products, branches, i
 
       if (installError) throw installError;
 
-      await supabase.from("products").update({ status: "installed" }).eq("id", selectedProduct.id);
-      await supabase.from("dispatch_items").update({ status: "installed" }).eq("product_id", selectedProduct.id);
+      // Independent follow-up writes — run them together instead of sequentially
+      // to cut a round-trip off the (remote) save latency.
+      await Promise.all([
+        supabase.from("products").update({ status: "installed" }).eq("id", selectedProduct.id),
+        supabase.from("dispatch_items").update({ status: "installed" }).eq("product_id", selectedProduct.id),
+      ]);
 
       // EMAIL DISABLED — uncomment when SMTP is configured and working
       // const emailTo =
@@ -765,7 +857,7 @@ export default function InstallationModal({ show, onClose, products, branches, i
                 <div className="flex items-center gap-1.5 mb-3">
                   <Zap size={13} className="text-[#FDCB6E]" />
                   <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Link to PC Installation</span>
-                  <span className="ml-auto text-[10px] text-gray-400">Optional</span>
+                  <span className="ml-auto text-[10px] text-gray-400">{isUPS ? "Required" : "Optional"}</span>
                 </div>
 
                 {pcInstallations.length === 0 ? (
@@ -796,16 +888,24 @@ export default function InstallationModal({ show, onClose, products, branches, i
                   const linked = pcInstallations.find((i) => i.id === linkedPcId);
                   if (!linked) return null;
                   return (
-                    <div className="mt-2 bg-[#F0EDFF] border border-[#6C5CE7]/20 rounded-xl px-4 py-3 text-[12px] text-[#2D3436] space-y-0.5">
-                      <div className="font-semibold text-[#6C5CE7]">{linked.products?.name || "PC"}</div>
-                      {linked.products?.serial_number && <div className="font-mono text-[#6C5CE7]">{linked.products.serial_number}</div>}
-                      {(linked.custom_fields?.department_name || linked.customer_name) && (
-                        <div className="text-gray-500">{linked.custom_fields?.department_name || linked.customer_name}</div>
+                    <>
+                      <div className="mt-2 bg-[#F0EDFF] border border-[#6C5CE7]/20 rounded-xl px-4 py-3 text-[12px] text-[#2D3436] space-y-0.5">
+                        <div className="font-semibold text-[#6C5CE7]">{linked.products?.name || "PC"}</div>
+                        {linked.products?.serial_number && <div className="font-mono text-[#6C5CE7]">{linked.products.serial_number}</div>}
+                        {(linked.custom_fields?.department_name || linked.customer_name) && (
+                          <div className="text-gray-500">{linked.custom_fields?.department_name || linked.customer_name}</div>
+                        )}
+                        {linked.custom_fields?.contact_person && (
+                          <div className="text-gray-500">{linked.custom_fields.contact_person}</div>
+                        )}
+                      </div>
+                      {locationMismatch && (
+                        <div className="mt-2 bg-[#FFF0F0] border border-red-300 rounded-xl px-4 py-2.5 text-[12px] text-red-600 font-medium flex items-center gap-2">
+                          <span>⚠️</span>
+                          <span>Location mismatch — this printer and the selected PC are from different branches. Please verify before saving.</span>
+                        </div>
                       )}
-                      {linked.custom_fields?.contact_person && (
-                        <div className="text-gray-500">{linked.custom_fields.contact_person}</div>
-                      )}
-                    </div>
+                    </>
                   );
                 })()}
               </div>

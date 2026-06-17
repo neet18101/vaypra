@@ -9,14 +9,21 @@ export default async function DashboardPage() {
   try {
     const supabase = await createClient();
     const [invoicesRes, productsRes, customersRes] = await Promise.all([
-      supabase.from("invoices").select("*").order("date", { ascending: false }),
-      supabase.from("products").select("*"),
-      supabase.from("customers").select("*"),
+      // Only the columns the dashboard actually uses — not select("*") on every row.
+      supabase.from("invoices").select("invoice_number,customer_name,amount,type,status,date").order("date", { ascending: false }),
+      supabase.from("products").select("status"),
+      // Customers: we only need the count, so don't transfer any rows.
+      supabase.from("customers").select("id", { count: "exact", head: true }),
     ]);
 
+    // Surface failures instead of silently rendering an empty dashboard.
+    if (invoicesRes.error) console.error("[dashboard] invoices load failed:", invoicesRes.error.message);
+    if (productsRes.error) console.error("[dashboard] products load failed:", productsRes.error.message);
+    if (customersRes.error) console.error("[dashboard] customers load failed:", customersRes.error.message);
+
     const invoices = invoicesRes.data || [];
-    const customers = customersRes.data || [];
     const products = productsRes.data || [];
+    const customerCount = customersRes.count || 0;
 
     // Calculate lifecycle counts
     products.forEach((p) => {
@@ -41,7 +48,7 @@ export default async function DashboardPage() {
         totalRevenue: formatIndianCurrency(totalRevenue),
         totalOrders: invoices.length.toLocaleString("en-IN"),
         productsSold: invoices.filter((inv) => inv.type === "sale").length.toLocaleString("en-IN"),
-        activeCustomers: customers.length.toLocaleString("en-IN"),
+        activeCustomers: customerCount.toLocaleString("en-IN"),
       };
 
       recentTransactions = invoices.slice(0, 6).map((inv) => {

@@ -3,6 +3,7 @@ import SettingsContent from "./SettingsContent";
 
 export default async function SettingsPage() {
   let profile = null;
+  let userRole = "admin";
 
   try {
     const supabase = await createClient();
@@ -14,8 +15,11 @@ export default async function SettingsPage() {
         .eq("id", user.id)
         .single();
       if (data && data.business_name) profile = data;
+      userRole = data?.role || "admin";
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("[settings] profile load failed:", e);
+  }
 
-  return <SettingsContent profile={profile} />;
+  return <SettingsContent profile={profile} userRole={userRole} />;
 }

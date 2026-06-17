@@ -6,14 +6,16 @@ import { Download, X } from "lucide-react";
 export default function PwaInstall() {
   const [prompt, setPrompt]     = useState(null);
   const [dismissed, setDismissed] = useState(false);
-  const [installed, setInstalled] = useState(false);
+  const [installed, setInstalled] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(display-mode: standalone)").matches === true
+  );
 
   useEffect(() => {
-    // Don't show if already running as standalone PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setInstalled(true);
-      return;
-    }
+    // Don't attach listeners if already running as standalone PWA
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
 
     const handler = (e) => {
       e.preventDefault();

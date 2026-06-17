@@ -5,11 +5,17 @@ import { useState } from "react";
 export default function DonutChart({ segments }) {
   const [hovered, setHovered] = useState(null);
   const total = segments.reduce((s, seg) => s + seg.value, 0);
-  let cumulative = 0;
   const size = 148;
   const stroke = 22;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
+
+  // Precompute each segment's cumulative offset immutably (no mutation during render)
+  const arcs = segments.map((seg, i) => {
+    const prior = segments.slice(0, i).reduce((s, x) => s + x.value, 0);
+    const offset = (prior / total) * circumference;
+    return { ...seg, offset, pct: seg.value / total };
+  });
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -23,10 +29,7 @@ export default function DonutChart({ segments }) {
           stroke="#F1F2F8"
           strokeWidth={stroke}
         />
-        {segments.map((seg, i) => {
-          const pct = seg.value / total;
-          const offset = (cumulative / total) * circumference;
-          cumulative += seg.value;
+        {arcs.map((seg, i) => {
           const isHov = hovered === i;
           return (
             <circle
@@ -37,8 +40,8 @@ export default function DonutChart({ segments }) {
               fill="none"
               stroke={seg.color}
               strokeWidth={isHov ? stroke + 3 : stroke}
-              strokeDasharray={`${pct * circumference - 2} ${circumference}`}
-              strokeDashoffset={-offset}
+              strokeDasharray={`${seg.pct * circumference - 2} ${circumference}`}
+              strokeDashoffset={-seg.offset}
               strokeLinecap="round"
               transform={`rotate(-90 ${size / 2} ${size / 2})`}
               style={{ transition: "stroke-width 0.2s", cursor: "pointer" }}
