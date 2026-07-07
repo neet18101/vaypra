@@ -15,8 +15,9 @@ export default async function InventoryPage() {
     ]);
     if (productsRes.data) products = productsRes.data;
     if (categoriesRes.data) categories = categoriesRes.data;
+    if (branchesRes.error) console.error("[inventory] branches load failed:", branchesRes.error.message);
     if (branchesRes.data) branches = branchesRes.data;
-  } catch (e) {}
+  } catch (e) { console.error("[inventory] page load threw:", e); }
 
   return <InventoryContent products={products} categories={categories} branches={branches} />;
 }

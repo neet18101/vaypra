@@ -4,7 +4,7 @@ import { useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { motion } from "framer-motion";
-import { Plus, MapPin, X } from "lucide-react";
+import { Plus, MapPin, X, Pencil } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
 
@@ -35,6 +35,7 @@ const emptyForm = {
 export default function BranchesContent({ branches }) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
@@ -42,31 +43,33 @@ export default function BranchesContent({ branches }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const openAdd = () => { setEditingId(null); setForm(emptyForm); setShowModal(true); };
+  const openEdit = (branch) => {
+    setEditingId(branch.id);
+    setForm({ name: branch.name, manager: branch.manager || "", address: branch.address || "", revenue: branch.revenue || "", orders: branch.orders || "", status: branch.status || "active" });
+    setShowModal(true);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/branches", {
-        method: "POST",
+      const payload = { name: form.name, manager: form.manager, address: form.address, revenue: Number(form.revenue) || 0, orders: Number(form.orders) || 0, status: form.status };
+      const res = await fetch(editingId ? `/api/branches/${editingId}` : "/api/branches", {
+        method: editingId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          manager: form.manager,
-          address: form.address,
-          revenue: Number(form.revenue) || 0,
-          orders: Number(form.orders) || 0,
-          status: form.status,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json();
-        alert("Failed to add branch: " + err.error);
+        alert("Failed to save branch: " + err.error);
         return;
       }
       setShowModal(false);
       setForm(emptyForm);
+      setEditingId(null);
       startTransition(() => router.refresh());
     } catch (err) {
-      console.error("Failed to create branch:", err);
+      console.error("Failed to save branch:", err);
     } finally {
       setSaving(false);
     }
@@ -80,7 +83,7 @@ export default function BranchesContent({ branches }) {
           Multi-Branch Management
         </h1>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
         >
           <Plus size={16} />
@@ -116,13 +119,15 @@ export default function BranchesContent({ branches }) {
                     <p className="text-sm text-gray-500 ml-[26px]">
                       {branch.manager}
                     </p>
-                    {branch.address && (
-                      <p className="text-xs text-gray-400 ml-[26px] mt-0.5">
-                        {branch.address}
-                      </p>
-                    )}
+                    {branch.address
+                      ? <p className="text-xs text-gray-400 ml-[26px] mt-0.5">{branch.address}</p>
+                      : <p className="text-xs text-orange-400 ml-[26px] mt-0.5 cursor-pointer" onClick={() => openEdit(branch)}>⚠ No address — click Edit to add</p>
+                    }
                   </div>
-                  <StatusBadge status={branch.status} />
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(branch)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#6C5CE7] transition-colors"><Pencil size={14} /></button>
+                    <StatusBadge status={branch.status} />
+                  </div>
                 </div>
 
                 {/* Stats Sub-Grid */}
@@ -153,20 +158,17 @@ export default function BranchesContent({ branches }) {
         )}
       </div>
 
-      {/* Create Branch Modal */}
+      {/* Add / Edit Branch Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white max-w-lg w-full mx-4 rounded-2xl p-6">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-[#2D3436]">
-                Add Branch
+                {editingId ? "Edit Branch" : "Add Branch"}
               </h2>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setForm(emptyForm);
-                }}
+                onClick={() => { setShowModal(false); setForm(emptyForm); setEditingId(null); }}
                 className="text-[#9699B0] hover:text-[#2D3436] transition-colors"
               >
                 <X size={20} />
@@ -270,10 +272,7 @@ export default function BranchesContent({ branches }) {
             {/* Modal Footer */}
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setForm(emptyForm);
-                }}
+                onClick={() => { setShowModal(false); setForm(emptyForm); setEditingId(null); }}
                 className="border border-[#E2E4F0] rounded-[10px] px-5 py-2.5 text-sm text-[#6C6F87] hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -283,7 +282,7 @@ export default function BranchesContent({ branches }) {
                 disabled={saving}
                 className="bg-gradient-to-r from-[#6C5CE7] to-[#5A4BD1] text-white rounded-[10px] px-5 py-2.5 text-sm font-semibold hover:shadow-lg transition-shadow disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? "Saving..." : editingId ? "Update" : "Save"}
               </button>
             </div>
           </div>
