@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine, Key, ClipboardList, Zap,
+  X, Plus, Search, Check, Printer, Monitor, FileText, LayoutTemplate, ScanLine, Key, ClipboardList, Zap, MapPin,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -77,6 +77,7 @@ function YesNo({ value, onChange }) {
 
 const EMPTY_PC = {
   contact_person: "", tel_no: "", email: "", room_no: "",
+  department_name: "", address: "",
   win_key: "", win_version: "", win_activation: "",
   office_key: "", office_version: "", office_activation: "",
   av_key: "", av_name: "", av_validity: "", av_activation: "",
@@ -389,6 +390,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
           tel_no:            pcFields.tel_no,
           email:             pcFields.email,
           room_no:           pcFields.room_no,
+          department_name:   pcFields.department_name || mergedCF.department_name || "",
+          address:           pcFields.address         || mergedCF.address         || "",
           win_version:       pcFields.win_version,
           win_activation:    pcFields.win_activation,
           office_version:    pcFields.office_version,
@@ -1045,6 +1048,44 @@ export default function InstallationModal({ show, onClose, products, branches, i
                     <div>
                       <label className={labelClass}>Email ID</label>
                       <input type="email" value={pcFields.email} onChange={(e) => pc("email", e.target.value)} placeholder="user@example.com" className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location Info */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <MapPin size={13} className="text-[#6C5CE7]" />
+                    <span className="text-xs font-bold text-[#2D3436] uppercase tracking-wider">Location Info</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className={labelClass}>Department Name</label>
+                      <select
+                        className={inputClass}
+                        value={pcFields.department_name}
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          const branch = (branches || []).find(b => b.name === name);
+                          pc("department_name", name);
+                          pc("address", branch?.address || "");
+                        }}
+                      >
+                        <option value="">— Select department —</option>
+                        {(branches && branches.length > 0 ? branches : []).map(b => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Address</label>
+                      <input
+                        type="text"
+                        value={pcFields.address}
+                        onChange={(e) => pc("address", e.target.value)}
+                        placeholder="Full address"
+                        className={inputClass}
+                      />
                     </div>
                   </div>
                 </div>

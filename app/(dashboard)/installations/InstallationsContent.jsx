@@ -32,6 +32,9 @@ export default function InstallationsContent({ installations, products, branches
   const [showModal, setShowModal] = useState(false);
   const [expandedRow, setExpandedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDept, setSelectedDept] = useState("");
+  const PAGE_SIZE = 10;
   const [printMenuId, setPrintMenuId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [visualizerPcId, setVisualizerPcId] = useState(null);
@@ -99,19 +102,61 @@ export default function InstallationsContent({ installations, products, branches
     });
   };
 
-  const filteredInstallations = installations.filter((inst) => {
-    if (normalizeCategory(inst.products?.category) !== activeTab) return false;
+  // All installations for the active tab (used to build dept list)
+  const tabInstallations = installations.filter(
+    (inst) => normalizeCategory(inst.products?.category) === activeTab
+  );
+
+  // Unique departments for current tab
+  const deptOptions = Array.from(
+    new Set(
+      tabInstallations
+        .map((i) => i.custom_fields?.department_name || "")
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const filteredInstallations = tabInstallations.filter((inst) => {
+    if (selectedDept && (inst.custom_fields?.department_name || "") !== selectedDept) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    const productName = inst.products?.name || "";
-    const serialNumber = inst.products?.serial_number || "";
-    const customerName = inst.customer_name || "";
-    return (
-      productName.toLowerCase().includes(q) ||
-      serialNumber.toLowerCase().includes(q) ||
-      customerName.toLowerCase().includes(q)
-    );
+    const cf = inst.custom_fields || {};
+    return [
+      inst.products?.name,
+      inst.products?.serial_number,
+      inst.customer_name,
+      cf.mc_serial,
+      cf.department_name,
+      cf.contact_person,
+      cf.name_of_user,
+      cf.room_no,
+      inst.windows_key,
+      inst.ms_office_key,
+    ].some((v) => v && String(v).toLowerCase().includes(q));
   });
+
+  const totalPages = Math.ceil(filteredInstallations.length / PAGE_SIZE);
+  const paginatedInstallations = filteredInstallations.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  // Cross-tab hint: find which other tabs have results for the current search
+  const crossTabHits = searchQuery.trim() && filteredInstallations.length === 0
+    ? TABS.filter((tab) => {
+        if (tab.id === activeTab) return false;
+        return installations.some((inst) => {
+          if (normalizeCategory(inst.products?.category) !== tab.id) return false;
+          const q = searchQuery.toLowerCase();
+          const cf = inst.custom_fields || {};
+          return [
+            inst.products?.name, inst.products?.serial_number, inst.customer_name,
+            cf.mc_serial, cf.department_name, cf.contact_person, cf.name_of_user,
+            inst.windows_key, inst.ms_office_key,
+          ].some((v) => v && String(v).toLowerCase().includes(q));
+        });
+      })
+    : [];
 
   return (
     <div>
@@ -160,7 +205,7 @@ export default function InstallationsContent({ installations, products, branches
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setSearchQuery(""); setExpandedRow(null); }}
+              onClick={() => { setActiveTab(tab.id); setSearchQuery(""); setSelectedDept(""); setExpandedRow(null); setCurrentPage(1); }}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2.5 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all min-h-[42px] ${
                 isActive ? "text-white shadow-md" : "bg-white border border-[#E2E4F0] text-gray-600"
               }`}
@@ -176,14 +221,14 @@ export default function InstallationsContent({ installations, products, branches
         })}
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-4">
-        <div className="relative">
+      {/* Search + Department Filter */}
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder="Search name, serial, department…"
             className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-xl pl-10 pr-10 py-2.5 text-[13px] text-[#2D3436] outline-none focus:border-[#6C5CE7] transition-colors"
           />
@@ -193,7 +238,41 @@ export default function InstallationsContent({ installations, products, branches
             </button>
           )}
         </div>
+        {deptOptions.length > 0 && (
+          <select
+            value={selectedDept}
+            onChange={(e) => { setSelectedDept(e.target.value); setCurrentPage(1); }}
+            className={`bg-[#F8F9FE] border rounded-xl px-3 py-2.5 text-[13px] outline-none transition-colors cursor-pointer ${
+              selectedDept
+                ? "border-[#6C5CE7] text-[#6C5CE7] font-semibold"
+                : "border-[#E2E4F0] text-gray-500"
+            }`}
+          >
+            <option value="">All Departments</option>
+            {deptOptions.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        )}
       </div>
+
+      {/* Filter result count */}
+      {(selectedDept || searchQuery.trim()) && filteredInstallations.length > 0 && (
+        <div className="flex items-center gap-2 mb-3 -mt-1">
+          <span className="text-xs text-gray-500">
+            <span className="font-semibold text-[#6C5CE7]">{filteredInstallations.length}</span> result{filteredInstallations.length !== 1 ? "s" : ""} found
+            {selectedDept && <span className="ml-1">in <span className="font-medium text-[#2D3436]">"{selectedDept}"</span></span>}
+          </span>
+          {(selectedDept || searchQuery.trim()) && (
+            <button
+              onClick={() => { setSelectedDept(""); setSearchQuery(""); setCurrentPage(1); }}
+              className="text-[11px] text-gray-400 hover:text-red-500 underline transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Installations Table */}
       {filteredInstallations.length === 0 ? (
@@ -202,12 +281,28 @@ export default function InstallationsContent({ installations, products, branches
           <p className="text-sm text-gray-400">
             {searchQuery ? "No installations match your search" : "No installations recorded yet"}
           </p>
+          {crossTabHits.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs text-gray-400">Found in:</p>
+              {crossTabHits.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setSelectedDept(""); setExpandedRow(null); setCurrentPage(1); }}
+                  className="inline-flex items-center gap-1.5 mx-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
+                  style={{ background: tab.color }}
+                >
+                  <tab.icon size={12} />
+                  {tab.label} tab →
+                </button>
+              ))}
+            </div>
+          )}
         </Card>
       ) : (
         <>
           {/* ── Mobile cards ── */}
           <div className="md:hidden space-y-3 pb-24">
-            {filteredInstallations.map((installation, idx) => {
+            {paginatedInstallations.map((installation, idx) => {
               const isExpanded = expandedRow === installation.id;
               const branchName = branches.find((b) => b.id === installation.branch_id)?.name || "";
               const cf = installation.custom_fields || {};
@@ -375,7 +470,7 @@ export default function InstallationsContent({ installations, products, branches
                 </tr>
               </thead>
               <tbody>
-                {filteredInstallations.map((installation, index) => {
+                {paginatedInstallations.map((installation, index) => {
                   const isExpanded = expandedRow === installation.id;
                   const cf = installation.custom_fields || {};
                   const cfKeys = Object.keys(cf);
@@ -556,6 +651,55 @@ export default function InstallationsContent({ installations, products, branches
           </div>
         </Card>
         </>
+      )}
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 py-2">
+          <span className="text-xs text-gray-400">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredInstallations.length)} of {filteredInstallations.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E2E4F0] text-[#6C5CE7] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F0EDFF] transition-colors"
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push("…");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "…" ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                      currentPage === p
+                        ? "bg-[#6C5CE7] text-white"
+                        : "border border-[#E2E4F0] text-[#2D3436] hover:bg-[#F0EDFF]"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E2E4F0] text-[#6C5CE7] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F0EDFF] transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Print Template Picker Overlay */}

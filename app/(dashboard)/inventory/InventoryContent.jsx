@@ -1266,7 +1266,20 @@ export default function InventoryContent({ products, branches }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <PCLabel>Department Name</PCLabel>
-                  <input name="department_name" value={pcForm.department_name} onChange={(e) => setPCForm({ ...pcForm, department_name: e.target.value })} placeholder="e.g. Government Press Aishbagh" className={inputClass} />
+                  <select
+                    className={inputClass}
+                    value={pcForm.department_name}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      const branch = (branches || []).find(b => b.name === name);
+                      setPCForm({ ...pcForm, department_name: name, address: branch?.address || "" });
+                    }}
+                  >
+                    <option value="">— Select department —</option>
+                    {(branches && branches.length > 0 ? branches : DEPARTMENTS.map(d => ({ name: d }))).map(b => (
+                      <option key={b.name} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <PCLabel>Address</PCLabel>
