@@ -4,7 +4,7 @@ import { useState, useRef, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package, X, Plus, Edit, Trash2, Upload, ChevronDown,
+  Package, X, Plus, Edit, Trash2, Upload, Download, ChevronDown,
   Truck, Monitor, Printer, Zap, ScanLine, Copy, Eye, Search, Filter,
 } from "lucide-react";
 import Card from "@/app/components/Card";
@@ -603,6 +603,124 @@ export default function InventoryContent({ products, branches }) {
     return { count: rows.length - errors.length, errors };
   };
 
+  const handleExportCSV = () => {
+    const tab = activeTab;
+    const rows = tabProducts;
+
+    let headers, getRow;
+
+    if (tab === "PC") {
+      headers = [
+        "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+        "Brand", "Model No", "Serial No", "Specification", "Processor",
+        "Installation Date", "Warranty Period", "Warranty Expiry Date",
+        "Windows Key", "Windows Version", "MS Office Key", "MS Office Version",
+        "Antivirus Name", "Antivirus Serial Key", "Antivirus Validity",
+        "Installation Status",
+      ];
+      getRow = (p) => {
+        const cf = p.custom_fields || {};
+        return [
+          cf.department_name || "", cf.address || "", cf.name_of_user || cf.contact_person || "",
+          cf.mobile_no || cf.tel_no || "", cf.email_id || cf.email || "", cf.room_no || "",
+          p.brand || "", p.name || "", p.serial_number || "",
+          cf.specification || "", cf.processor || "",
+          cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+          cf.windows_key || "", cf.win_version || cf.windows_version || "",
+          cf.ms_office_key || "", cf.ms_office_version || cf.office_version || "",
+          cf.antivirus_name || cf.av_name || "", cf.antivirus_serial_key || cf.av_key || "",
+          cf.antivirus_validity || cf.av_validity || "",
+          p.status === "installed" ? "Installed" : "Not Installed",
+        ];
+      };
+    } else if (tab === "Single Printer" || tab === "Multi-Function Printer") {
+      headers = [
+        "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+        "Brand", "Model No", "Serial No",
+        "Installation Date", "Warranty Period", "Warranty Expiry Date",
+        "Toner/Cartridge Model", "Installation Status",
+      ];
+      getRow = (p) => {
+        const cf = p.custom_fields || {};
+        return [
+          cf.department_name || "", cf.address || "", cf.name_of_user || "",
+          cf.mobile_no || "", cf.email_id || "", cf.room_no || "",
+          p.brand || "", p.name || "", p.serial_number || cf.mc_serial || "",
+          cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+          cf.toner_cartridge_model || cf.toner_model || "",
+          p.status === "installed" ? "Installed" : "Not Installed",
+        ];
+      };
+    } else if (tab === "UPS") {
+      headers = [
+        "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+        "Brand", "Model No", "Serial No",
+        "Installation Date", "Warranty Period", "Warranty Expiry Date",
+        "Capacity (KVA)", "Battery Type", "Installation Status",
+      ];
+      getRow = (p) => {
+        const cf = p.custom_fields || {};
+        return [
+          cf.department_name || "", cf.address || "", cf.name_of_user || "",
+          cf.mobile_no || "", cf.email_id || "", cf.room_no || "",
+          p.brand || "", p.name || "", p.serial_number || cf.mc_serial || "",
+          cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+          cf.capacity_kva || "", cf.battery_type || "",
+          p.status === "installed" ? "Installed" : "Not Installed",
+        ];
+      };
+    } else if (tab === "Scanner") {
+      headers = [
+        "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+        "Brand", "Model No", "Serial No",
+        "Installation Date", "Warranty Period", "Warranty Expiry Date",
+        "Scanner Type", "Installation Status",
+      ];
+      getRow = (p) => {
+        const cf = p.custom_fields || {};
+        return [
+          cf.department_name || "", cf.address || "", cf.name_of_user || "",
+          cf.mobile_no || "", cf.email_id || "", cf.room_no || "",
+          p.brand || "", p.name || "", p.serial_number || cf.mc_serial || "",
+          cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+          cf.scanner_type || "",
+          p.status === "installed" ? "Installed" : "Not Installed",
+        ];
+      };
+    } else if (tab === "Photocopier") {
+      headers = [
+        "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+        "Brand", "Model No", "Serial No",
+        "Installation Date", "Warranty Period", "Warranty Expiry Date",
+        "Toner Model", "Installation Status",
+      ];
+      getRow = (p) => {
+        const cf = p.custom_fields || {};
+        return [
+          cf.department_name || "", cf.address || "", cf.name_of_user || "",
+          cf.mobile_no || "", cf.email_id || "", cf.room_no || "",
+          p.brand || "", p.name || "", p.serial_number || cf.mc_serial || "",
+          cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+          cf.toner_model || "",
+          p.status === "installed" ? "Installed" : "Not Installed",
+        ];
+      };
+    } else {
+      headers = ["Brand", "Model No", "Serial No", "Status", "Installation Status"];
+      getRow = (p) => [p.brand || "", p.name || "", p.serial_number || "", p.status || "", p.status === "installed" ? "Installed" : "Not Installed"];
+    }
+
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(","), ...rows.map((p) => getRow(p).map(escape).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory_${tab.replace(/\s+/g, "_").toLowerCase()}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const currentTab = TABS.find((t) => t.id === activeTab);
 
   return (
@@ -613,6 +731,13 @@ export default function InventoryContent({ products, branches }) {
           Inventory Management
         </h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E2E4F0] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
           <button
             onClick={() => setShowCSVModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E2E4F0] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
