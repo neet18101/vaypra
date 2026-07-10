@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X,
-  Printer, Eye, Trash2, Zap, ScanLine, Copy, Network,
+  Printer, Eye, Trash2, Zap, ScanLine, Copy, Network, Download,
 } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
@@ -158,6 +158,50 @@ export default function InstallationsContent({ installations, products, branches
       })
     : [];
 
+  const handleExportCSV = () => {
+    const rows = filteredInstallations;
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+
+    const headers = [
+      "Category", "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+      "Brand", "Model", "Serial No", "MC Serial",
+      "Installer", "Installation Date",
+      "Windows Key", "MS Office Key", "Antivirus Key",
+    ];
+
+    const getRow = (inst) => {
+      const cf = inst.custom_fields || {};
+      const p = inst.products || {};
+      return [
+        normalizeCategory(p.category) || p.category || "",
+        cf.department_name || cf.linked_pc_dept || inst.customer_name || "",
+        cf.address || "",
+        cf.contact_person || cf.name_of_user || cf.name_of_user || "",
+        cf.tel_no || cf.mobile_no || "",
+        cf.email || cf.email_id || cf.email_admin || "",
+        cf.room_no || "",
+        p.brand || "",
+        p.name || "",
+        p.serial_number || "",
+        cf.mc_serial || "",
+        inst.installer_name || "",
+        inst.installation_date || "",
+        inst.windows_key || "",
+        inst.ms_office_key || "",
+        inst.antivirus_key || "",
+      ];
+    };
+
+    const csv = [headers.map(escape).join(","), ...rows.map((i) => getRow(i).map(escape).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `installations_${activeTab.replace(/\s+/g, "_").toLowerCase()}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -165,13 +209,22 @@ export default function InstallationsContent({ installations, products, branches
         <h1 className="text-[22px] sm:text-[24px] font-extrabold font-[var(--font-display)]">
           Installations
         </h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
-        >
-          <Plus size={16} />
-          Record Installation
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E2E4F0] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
+          >
+            <Plus size={16} />
+            Record Installation
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats — horizontal scroll on mobile */}
