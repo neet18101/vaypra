@@ -167,7 +167,7 @@ function SectionHeading({ children }) {
   );
 }
 
-export default function InventoryContent({ products, branches }) {
+export default function InventoryContent({ products, branches, installedProductIds = [] }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("PC");
   const [showModal, setShowModal] = useState(false);
@@ -220,6 +220,9 @@ export default function InventoryContent({ products, branches }) {
   // Background import progress chip
   const [importProgress, setImportProgress] = useState(null); // { tab, current, total, done, errorCount }
 
+  // Missing installation filter
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const installedSet = new Set(installedProductIds);
 
   const normalizeCategory = (cat) => cat === "PhotoCopy" ? "Photocopier" : cat;
   const tabProducts = products.filter((p) => normalizeCategory(p.category) === activeTab);
@@ -287,7 +290,13 @@ export default function InventoryContent({ products, branches }) {
     activeTab === "Photocopier" ? filteredPhotocopierProducts :
     tabProducts;
 
-  const inStockTabProducts = (activeTab === "PC" ? filteredPCProducts : displayedNonPCProducts).filter((p) => p.status === "in-stock");
+  const isInstalled = (p) => installedSet.has(p.id);
+  const missingCount = (activeTab === "PC" ? filteredPCProducts : displayedNonPCProducts).filter((p) => !isInstalled(p)).length;
+
+  const filteredPCProductsFinal = showMissingOnly ? filteredPCProducts.filter((p) => !isInstalled(p)) : filteredPCProducts;
+  const displayedNonPCProductsFinal = showMissingOnly ? displayedNonPCProducts.filter((p) => !isInstalled(p)) : displayedNonPCProducts;
+
+  const inStockTabProducts = (activeTab === "PC" ? filteredPCProductsFinal : displayedNonPCProductsFinal).filter((p) => p.status === "in-stock");
 
   const toggleSelect = (id) =>
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -764,7 +773,7 @@ export default function InventoryContent({ products, branches }) {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setSelectedIds([]); setExpandedRow(null); setPcDeptFilter(""); setPcSerialSearch(""); setPcProcessorFilter(""); setUpsDeptFilter(""); setUpsSerialSearch(""); setSpDeptFilter(""); setSpSerialSearch(""); }}
+              onClick={() => { setActiveTab(tab.id); setSelectedIds([]); setExpandedRow(null); setShowMissingOnly(false); setPcDeptFilter(""); setPcSerialSearch(""); setPcProcessorFilter(""); setUpsDeptFilter(""); setUpsSerialSearch(""); setSpDeptFilter(""); setSpSerialSearch(""); }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                 isActive
                   ? "text-white border-transparent shadow-md"
@@ -867,18 +876,26 @@ export default function InventoryContent({ products, branches }) {
               )}
             </div>
 
+            {/* Missing installation toggle */}
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+
             {/* Clear + count */}
-            {(pcDeptFilter || pcSerialSearch || pcProcessorFilter) && (
+            {(pcDeptFilter || pcSerialSearch || pcProcessorFilter || showMissingOnly) && (
               <button
-                onClick={() => { setPcDeptFilter(""); setPcSerialSearch(""); setPcProcessorFilter(""); setSelectedIds([]); }}
+                onClick={() => { setPcDeptFilter(""); setPcSerialSearch(""); setPcProcessorFilter(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredPCProducts.length}
-              {(pcDeptFilter || pcSerialSearch || pcProcessorFilter) ? ` of ${tabProducts.length}` : ""} items
+              {filteredPCProductsFinal.length}
+              {(pcDeptFilter || pcSerialSearch || pcProcessorFilter || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
 
@@ -942,7 +959,7 @@ export default function InventoryContent({ products, branches }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPCProducts.map((product, index) => {
+                  {filteredPCProductsFinal.map((product, index) => {
                     const cf = product.custom_fields || {};
                     return (
                       <motion.tr
@@ -1029,7 +1046,7 @@ export default function InventoryContent({ products, branches }) {
                       </motion.tr>
                     );
                   })}
-                  {filteredPCProducts.length === 0 && (
+                  {filteredPCProductsFinal.length === 0 && (
                     <tr>
                       <td colSpan={13} className="py-14 text-center text-gray-400 text-sm">
                         <Monitor size={32} className="mx-auto mb-2 opacity-40" />
@@ -1082,17 +1099,23 @@ export default function InventoryContent({ products, branches }) {
                 </button>
               )}
             </div>
-            {(spDeptFilter || spSerialSearch) && (
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+            {(spDeptFilter || spSerialSearch || showMissingOnly) && (
               <button
-                onClick={() => { setSpDeptFilter(""); setSpSerialSearch(""); setSelectedIds([]); }}
+                onClick={() => { setSpDeptFilter(""); setSpSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredSPProducts.length}
-              {(spDeptFilter || spSerialSearch) ? ` of ${tabProducts.length}` : ""} items
+              {displayedNonPCProductsFinal.length}
+              {(spDeptFilter || spSerialSearch || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
         )}
@@ -1136,17 +1159,23 @@ export default function InventoryContent({ products, branches }) {
             </div>
 
             {/* Clear + count */}
-            {(upsDeptFilter || upsSerialSearch) && (
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+            {(upsDeptFilter || upsSerialSearch || showMissingOnly) && (
               <button
-                onClick={() => { setUpsDeptFilter(""); setUpsSerialSearch(""); setSelectedIds([]); }}
+                onClick={() => { setUpsDeptFilter(""); setUpsSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredUPSProducts.length}
-              {(upsDeptFilter || upsSerialSearch) ? ` of ${tabProducts.length}` : ""} items
+              {displayedNonPCProductsFinal.length}
+              {(upsDeptFilter || upsSerialSearch || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
         )}
@@ -1184,17 +1213,23 @@ export default function InventoryContent({ products, branches }) {
                 </button>
               )}
             </div>
-            {(mfpDeptFilter || mfpSerialSearch) && (
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+            {(mfpDeptFilter || mfpSerialSearch || showMissingOnly) && (
               <button
-                onClick={() => { setMfpDeptFilter(""); setMfpSerialSearch(""); setSelectedIds([]); }}
+                onClick={() => { setMfpDeptFilter(""); setMfpSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredMFPProducts.length}
-              {(mfpDeptFilter || mfpSerialSearch) ? ` of ${tabProducts.length}` : ""} items
+              {displayedNonPCProductsFinal.length}
+              {(mfpDeptFilter || mfpSerialSearch || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
         )}
@@ -1232,17 +1267,23 @@ export default function InventoryContent({ products, branches }) {
                 </button>
               )}
             </div>
-            {(scanDeptFilter || scanSerialSearch) && (
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+            {(scanDeptFilter || scanSerialSearch || showMissingOnly) && (
               <button
-                onClick={() => { setScanDeptFilter(""); setScanSerialSearch(""); setSelectedIds([]); }}
+                onClick={() => { setScanDeptFilter(""); setScanSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredScannerProducts.length}
-              {(scanDeptFilter || scanSerialSearch) ? ` of ${tabProducts.length}` : ""} items
+              {displayedNonPCProductsFinal.length}
+              {(scanDeptFilter || scanSerialSearch || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
         )}
@@ -1280,17 +1321,23 @@ export default function InventoryContent({ products, branches }) {
                 </button>
               )}
             </div>
-            {(photoDeptFilter || photoSerialSearch) && (
+            <button
+              onClick={() => { setShowMissingOnly(!showMissingOnly); setSelectedIds([]); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${showMissingOnly ? "bg-[#E17055] border-[#E17055] text-white" : missingCount > 0 ? "border-[#E17055] text-[#E17055] hover:bg-[#E17055]/10" : "border-[#E2E4F0] text-gray-400 cursor-default"}`}
+            >
+              ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
+            </button>
+            {(photoDeptFilter || photoSerialSearch || showMissingOnly) && (
               <button
-                onClick={() => { setPhotoDeptFilter(""); setPhotoSerialSearch(""); setSelectedIds([]); }}
+                onClick={() => { setPhotoDeptFilter(""); setPhotoSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
                 className="text-xs text-[#E17055] font-semibold hover:underline"
               >
                 Clear
               </button>
             )}
             <span className="ml-auto text-[12px] text-gray-400 font-medium">
-              {filteredPhotocopierProducts.length}
-              {(photoDeptFilter || photoSerialSearch) ? ` of ${tabProducts.length}` : ""} items
+              {displayedNonPCProductsFinal.length}
+              {(photoDeptFilter || photoSerialSearch || showMissingOnly) ? ` of ${tabProducts.length}` : ""} items
             </span>
           </div>
         )}
@@ -1308,7 +1355,7 @@ export default function InventoryContent({ products, branches }) {
                 </tr>
               </thead>
               <tbody>
-                {displayedNonPCProducts.map((product, index) => {
+                {displayedNonPCProductsFinal.map((product, index) => {
                   const cf = product.custom_fields || {};
                   return (
                     <motion.tr
@@ -1350,7 +1397,7 @@ export default function InventoryContent({ products, branches }) {
                     </motion.tr>
                   );
                 })}
-                {displayedNonPCProducts.length === 0 && (
+                {displayedNonPCProductsFinal.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-14 text-center text-gray-400 text-sm">
                       <Package size={32} className="mx-auto mb-2 opacity-40" />

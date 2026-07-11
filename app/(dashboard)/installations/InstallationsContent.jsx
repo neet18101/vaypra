@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wrench, Monitor, Calendar, User, Key, ChevronDown, ChevronUp, Plus, Search, X,
-  Printer, Eye, Trash2, Zap, ScanLine, Copy, Network, Download,
+  Printer, Eye, Trash2, Zap, ScanLine, Copy, Network, Download, Pencil,
 } from "lucide-react";
 import Card from "@/app/components/Card";
 import StatusBadge from "@/app/components/StatusBadge";
@@ -38,6 +38,59 @@ export default function InstallationsContent({ installations, products, branches
   const [printMenuId, setPrintMenuId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [visualizerPcId, setVisualizerPcId] = useState(null);
+  const [editingInstallation, setEditingInstallation] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEdit = (installation) => {
+    const cf = installation.custom_fields || {};
+    setEditForm({
+      installation_date: installation.installation_date || "",
+      customer_name:     installation.customer_name || "",
+      installer_name:    installation.installer_name || "",
+      department_name:   cf.department_name || cf.linked_pc_dept || "",
+      address:           cf.address || "",
+      name_of_user:      cf.name_of_user || cf.contact_person || "",
+      tel_no:            cf.tel_no || cf.mobile_no || "",
+      email:             cf.email || cf.email_id || cf.email_admin || "",
+      room_no:           cf.room_no || "",
+    });
+    setEditingInstallation(installation);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingInstallation) return;
+    setEditSaving(true);
+    try {
+      const existingCf = editingInstallation.custom_fields || {};
+      const updatedCf = {
+        ...existingCf,
+        department_name: editForm.department_name,
+        address:         editForm.address,
+        name_of_user:    editForm.name_of_user,
+        contact_person:  editForm.name_of_user,
+        tel_no:          editForm.tel_no,
+        email:           editForm.email,
+        room_no:         editForm.room_no,
+      };
+      const { error } = await supabase
+        .from("installations")
+        .update({
+          installation_date: editForm.installation_date || null,
+          customer_name:     editForm.customer_name,
+          installer_name:    editForm.installer_name,
+          custom_fields:     updatedCf,
+        })
+        .eq("id", editingInstallation.id);
+      if (error) throw error;
+      setEditingInstallation(null);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      alert("Save failed: " + err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const handleDelete = async (installation) => {
     if (!confirm(`Delete installation for "${installation.products?.name || "this product"}"? This cannot be undone.`)) return;
@@ -613,6 +666,13 @@ export default function InstallationsContent({ installations, products, branches
                               );
                             })()}
                             <button
+                              onClick={() => openEdit(installation)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
+                              title="Edit installation"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
                               onClick={() => handleDelete(installation)}
                               disabled={deletingId === installation.id}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
@@ -854,6 +914,124 @@ export default function InstallationsContent({ installations, products, branches
       >
         <Plus size={24} />
       </button>
+
+      {/* Edit Installation Modal */}
+      <AnimatePresence>
+        {editingInstallation && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
+            onClick={() => setEditingInstallation(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18 }}
+              className="bg-white w-full max-w-lg rounded-2xl p-6 my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-base font-bold text-[#2D3436]">Edit Installation</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">{editingInstallation.products?.name || "—"} · {editingInstallation.products?.serial_number || ""}</p>
+                </div>
+                <button onClick={() => setEditingInstallation(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={18} /></button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Date */}
+                <div>
+                  <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Installation Date</label>
+                  <input type="date" value={editForm.installation_date} onChange={(e) => setEditForm({ ...editForm, installation_date: e.target.value })}
+                    className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                </div>
+
+                {/* Department & Address */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Department Name</label>
+                    <select
+                      value={branches.find(b => b.name === editForm.department_name)?.id || ""}
+                      onChange={(e) => {
+                        const branch = branches.find(b => b.id === e.target.value);
+                        setEditForm({
+                          ...editForm,
+                          department_name: branch ? branch.name : "",
+                          address: branch?.address || editForm.address,
+                        });
+                      }}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]"
+                    >
+                      <option value="">— Select department —</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                    {/* show current value if not matched in branches */}
+                    {editForm.department_name && !branches.find(b => b.name === editForm.department_name) && (
+                      <p className="text-xs text-gray-400 mt-1">Current: {editForm.department_name}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Address</label>
+                    <input type="text" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                      placeholder="Full address"
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                </div>
+
+                {/* User details */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Name of User</label>
+                    <input type="text" value={editForm.name_of_user} onChange={(e) => setEditForm({ ...editForm, name_of_user: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Room No.</label>
+                    <input type="text" value={editForm.room_no} onChange={(e) => setEditForm({ ...editForm, room_no: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Mobile No.</label>
+                    <input type="tel" value={editForm.tel_no} onChange={(e) => setEditForm({ ...editForm, tel_no: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Email ID</label>
+                    <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                </div>
+
+                {/* Installer */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Customer / Dept. Ref.</label>
+                    <input type="text" value={editForm.customer_name} onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9699B0] mb-1.5">Installer Name</label>
+                    <input type="text" value={editForm.installer_name} onChange={(e) => setEditForm({ ...editForm, installer_name: e.target.value })}
+                      className="w-full bg-[#F8F9FE] border border-[#E2E4F0] rounded-[10px] px-4 py-2.5 text-[13.5px] text-[#2D3436] outline-none focus:border-[#6C5CE7]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 mt-6">
+                <button onClick={() => setEditingInstallation(null)}
+                  className="border border-[#E2E4F0] rounded-[10px] px-5 py-2.5 text-sm text-[#6C6F87] hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleEditSave} disabled={editSaving}
+                  className="bg-gradient-to-r from-[#6C5CE7] to-[#5A4BD1] text-white rounded-[10px] px-5 py-2.5 text-sm font-semibold hover:shadow-lg transition-shadow disabled:opacity-50">
+                  {editSaving ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Installation Modal */}
       {showModal && (
