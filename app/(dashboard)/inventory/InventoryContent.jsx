@@ -298,6 +298,58 @@ export default function InventoryContent({ products, branches, installedProductI
 
   const inStockTabProducts = (activeTab === "PC" ? filteredPCProductsFinal : displayedNonPCProductsFinal).filter((p) => p.status === "in-stock");
 
+  // Duplicate serial detection within current tab only
+  const serialCountMap = {};
+  tabProducts.forEach((p) => {
+    const s = (p.serial_number || "").trim();
+    if (s && s !== "-" && s !== "—" && s !== "n/a" && s !== "na") {
+      const key = s.toLowerCase();
+      if (!serialCountMap[key]) serialCountMap[key] = [];
+      serialCountMap[key].push(p.id);
+    }
+  });
+  const duplicateSerials = Object.values(serialCountMap).filter((ids) => ids.length > 1);
+  const duplicateProductIds = new Set(
+    duplicateSerials.flatMap((ids) => ids.slice(1)) // keep first, mark rest as duplicates
+  );
+  const INVALID_SERIALS = new Set(["-", "—", "n/a", "na", "nil", "none", ""]);
+  const invalidSerialIds = tabProducts
+    .filter((p) => INVALID_SERIALS.has((p.serial_number || "").trim().toLowerCase()))
+    .map((p) => p.id);
+
+  const [removingInvalid, setRemovingInvalid] = useState(false);
+  const handleRemoveInvalidSerials = async () => {
+    if (!invalidSerialIds.length) return;
+    if (!confirm(`Archive ${invalidSerialIds.length} product(s) with invalid serial numbers (-, —, n/a, na)?`)) return;
+    setRemovingInvalid(true);
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("products")
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", invalidSerialIds);
+      startTransition(() => router.refresh());
+    } finally {
+      setRemovingInvalid(false);
+    }
+  };
+
+  const [removingDuplicates, setRemovingDuplicates] = useState(false);
+  const handleRemoveDuplicates = async () => {
+    if (!duplicateProductIds.size) return;
+    if (!confirm(`Delete ${duplicateProductIds.size} duplicate product(s)? This cannot be undone.`)) return;
+    setRemovingDuplicates(true);
+    try {
+      const supabase = createClient();
+      for (const id of duplicateProductIds) {
+        await supabase.from("products").delete().eq("id", id);
+      }
+      startTransition(() => router.refresh());
+    } finally {
+      setRemovingDuplicates(false);
+    }
+  };
+
   const toggleSelect = (id) =>
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
@@ -612,6 +664,48 @@ export default function InventoryContent({ products, branches, installedProductI
     return { count: rows.length - errors.length, errors };
   };
 
+  const handleExportAll = () => {
+    const headers = [
+      "Category", "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+      "Brand", "Model", "Serial No",
+      "Installation Date", "Warranty Period", "Warranty Expiry Date",
+      "Specification", "Processor",
+      "Windows Key", "Windows Version",
+      "MS Office Key", "MS Office Version",
+      "Antivirus Name", "Antivirus Serial Key", "Antivirus Validity",
+      "Toner / Cartridge Model", "Capacity (KVA)", "Battery Type",
+      "Installation Status",
+    ];
+    const getRow = (p) => {
+      const cf = p.custom_fields || {};
+      return [
+        p.category || "",
+        cf.department_name || "", cf.address || "",
+        cf.name_of_user || cf.contact_person || "",
+        cf.mobile_no || cf.tel_no || "", cf.email_id || cf.email || "", cf.room_no || "",
+        p.brand || "", p.name || "", p.serial_number || cf.mc_serial || "",
+        cf.installation_date || "", cf.warranty_period || "", cf.warranty_expiry_date || "",
+        cf.specification || "", cf.processor || "",
+        cf.windows_key || "", cf.win_version || cf.windows_version || "",
+        cf.ms_office_key || "", cf.ms_office_version || cf.office_version || "",
+        cf.antivirus_name || cf.av_name || "", cf.antivirus_serial_key || cf.av_key || "",
+        cf.antivirus_validity || cf.av_validity || "",
+        cf.toner_cartridge_model || cf.toner_model || "",
+        cf.capacity_kva || "", cf.battery_type || "",
+        installedSet.has(p.id) ? "Installed" : "Not Installed",
+      ];
+    };
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(","), ...products.map((p) => getRow(p).map(escape).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory_all_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportCSV = () => {
     const tab = activeTab;
     const rows = tabProducts;
@@ -740,6 +834,13 @@ export default function InventoryContent({ products, branches, installedProductI
           Inventory Management
         </h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportAll}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#6C5CE7] bg-[#6C5CE7]/5 text-sm font-medium text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
+          >
+            <Download size={16} />
+            Export All
+          </button>
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E2E4F0] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -884,6 +985,28 @@ export default function InventoryContent({ products, branches, installedProductI
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
 
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
             {/* Clear + count */}
             {(pcDeptFilter || pcSerialSearch || pcProcessorFilter || showMissingOnly) && (
               <button
@@ -967,7 +1090,7 @@ export default function InventoryContent({ products, branches, installedProductI
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.includes(product.id) ? "bg-[#EDE7F6]/40" : ""}`}
+                        className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.includes(product.id) ? "bg-[#EDE7F6]/40" : duplicateProductIds.has(product.id) ? "bg-red-50/60" : ""}`}
                       >
                         <td className="py-3 px-2 w-10">
                           <input
@@ -1105,6 +1228,28 @@ export default function InventoryContent({ products, branches, installedProductI
             >
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
+
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
             {(spDeptFilter || spSerialSearch || showMissingOnly) && (
               <button
                 onClick={() => { setSpDeptFilter(""); setSpSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
@@ -1165,6 +1310,28 @@ export default function InventoryContent({ products, branches, installedProductI
             >
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
+
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
             {(upsDeptFilter || upsSerialSearch || showMissingOnly) && (
               <button
                 onClick={() => { setUpsDeptFilter(""); setUpsSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
@@ -1219,6 +1386,28 @@ export default function InventoryContent({ products, branches, installedProductI
             >
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
+
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
             {(mfpDeptFilter || mfpSerialSearch || showMissingOnly) && (
               <button
                 onClick={() => { setMfpDeptFilter(""); setMfpSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
@@ -1273,6 +1462,28 @@ export default function InventoryContent({ products, branches, installedProductI
             >
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
+
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
             {(scanDeptFilter || scanSerialSearch || showMissingOnly) && (
               <button
                 onClick={() => { setScanDeptFilter(""); setScanSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
@@ -1327,6 +1538,28 @@ export default function InventoryContent({ products, branches, installedProductI
             >
               ⚠ {missingCount} Missing Installation{missingCount !== 1 ? "s" : ""}
             </button>
+
+            {/* Duplicate serial button */}
+            {duplicateProductIds.size > 0 && (
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={removingDuplicates}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-red-400 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {duplicateProductIds.size} Duplicate Serial{duplicateProductIds.size !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
+
+            {/* Invalid serial button */}
+            {invalidSerialIds.length > 0 && (
+              <button
+                onClick={handleRemoveInvalidSerials}
+                disabled={removingInvalid}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-orange-400 text-orange-500 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              >
+                🗑 {invalidSerialIds.length} Invalid Serial{invalidSerialIds.length !== 1 ? "s" : ""} — Remove
+              </button>
+            )}
             {(photoDeptFilter || photoSerialSearch || showMissingOnly) && (
               <button
                 onClick={() => { setPhotoDeptFilter(""); setPhotoSerialSearch(""); setShowMissingOnly(false); setSelectedIds([]); }}
@@ -1363,7 +1596,7 @@ export default function InventoryContent({ products, branches, installedProductI
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.includes(product.id) ? "bg-[#EDE7F6]/40" : ""}`}
+                      className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.includes(product.id) ? "bg-[#EDE7F6]/40" : duplicateProductIds.has(product.id) ? "bg-red-50/60" : ""}`}
                     >
                       <td className="py-3 px-4 text-[13px] text-gray-700 min-w-[200px] max-w-[300px]">
                         <div className="font-medium" title={cf.department_name}>{cf.department_name || "—"}</div>

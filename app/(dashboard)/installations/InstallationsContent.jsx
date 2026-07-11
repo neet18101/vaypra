@@ -211,6 +211,40 @@ export default function InstallationsContent({ installations, products, branches
       })
     : [];
 
+  const handleExportAll = () => {
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const headers = [
+      "Category", "Department Name", "Address", "Name of User", "Mobile No", "Email ID", "Room No",
+      "Brand", "Model", "Serial No", "MC Serial",
+      "Installer", "Installation Date",
+      "Windows Key", "MS Office Key", "Antivirus Key",
+    ];
+    const getRow = (inst) => {
+      const cf = inst.custom_fields || {};
+      const p = inst.products || {};
+      return [
+        normalizeCategory(p.category) || p.category || "",
+        cf.department_name || cf.linked_pc_dept || inst.customer_name || "",
+        cf.address || "",
+        cf.contact_person || cf.name_of_user || "",
+        cf.tel_no || cf.mobile_no || "",
+        cf.email || cf.email_id || cf.email_admin || "",
+        cf.room_no || "",
+        p.brand || "", p.name || "", p.serial_number || "", cf.mc_serial || "",
+        inst.installer_name || "", inst.installation_date || "",
+        inst.windows_key || "", inst.ms_office_key || "", inst.antivirus_key || "",
+      ];
+    };
+    const csv = [headers.map(escape).join(","), ...installations.map((i) => getRow(i).map(escape).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `installations_all_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportCSV = () => {
     const rows = filteredInstallations;
     const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -263,6 +297,13 @@ export default function InstallationsContent({ installations, products, branches
           Installations
         </h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportAll}
+            className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#6C5CE7] bg-[#6C5CE7]/5 text-sm font-medium text-[#6C5CE7] hover:bg-[#6C5CE7]/10 transition-colors"
+          >
+            <Download size={16} />
+            Export All
+          </button>
           <button
             onClick={handleExportCSV}
             className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E2E4F0] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
