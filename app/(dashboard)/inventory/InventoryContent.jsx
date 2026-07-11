@@ -324,10 +324,7 @@ export default function InventoryContent({ products, branches, installedProductI
     setRemovingInvalid(true);
     try {
       const supabase = createClient();
-      await supabase
-        .from("products")
-        .update({ deleted_at: new Date().toISOString() })
-        .in("id", invalidSerialIds);
+      await supabase.from("products").delete().in("id", invalidSerialIds);
       startTransition(() => router.refresh());
     } finally {
       setRemovingInvalid(false);
