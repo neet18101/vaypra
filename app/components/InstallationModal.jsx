@@ -115,6 +115,20 @@ const PRINTER_TRAINING = [
 
 const REPORT_CATS = new Set(["pc", "single printer", "multi-function printer", "scanner", "photocopier", "photocopy"]);
 
+// Real department list (mirrors the inventory page). The `branches` table only
+// holds generic office entries, so we drive the Department dropdown from this.
+const DEPARTMENTS = [
+  "Aishbagh",
+  "Hazratganj",
+  "Camp Office Directorate-Hazratganj",
+  "Government Branch Press Hazratganj",
+  "Government Press Aishbagh",
+  "Government Press Rampur",
+  "Government Press Varanasi",
+  "Government Press Prayagraj",
+  "Directorate of Printing and Stationary",
+];
+
 export default function InstallationModal({ show, onClose, products, branches, installations = [], category = "PC" }) {
   const router = useRouter();
   const supabase = createClient();
@@ -128,6 +142,9 @@ export default function InstallationModal({ show, onClose, products, branches, i
   const [pcFields, setPcFields] = useState(EMPTY_PC);
   const [printerFields, setPrinterFields] = useState(EMPTY_PRINTER);
   const [linkedPcId, setLinkedPcId] = useState("");
+  const [pcLinkQuery, setPcLinkQuery] = useState("");
+  const [showPcLinkList, setShowPcLinkList] = useState(false);
+  const pcLinkRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
 
   const isUPS = category === "UPS";
@@ -142,6 +159,24 @@ export default function InstallationModal({ show, onClose, products, branches, i
   const pcInstallations = installations.filter(
     (i) => i.products?.category?.toLowerCase() === "pc"
   );
+
+  const pcLabel = (inst) => {
+    const sn   = inst.products?.serial_number || "";
+    const name = inst.products?.name          || "Unknown";
+    const dept = inst.custom_fields?.department_name || inst.customer_name || "";
+    const user = inst.custom_fields?.contact_person  || "";
+    return [sn && `SN: ${sn}`, name, dept, user].filter(Boolean).join(" — ");
+  };
+
+  const filteredPcInstallations = pcLinkQuery.trim()
+    ? pcInstallations.filter((i) => {
+        const q = pcLinkQuery.toLowerCase();
+        return (i.products?.serial_number || "").toLowerCase().includes(q) ||
+               (i.products?.name || "").toLowerCase().includes(q) ||
+               (i.custom_fields?.department_name || i.customer_name || "").toLowerCase().includes(q) ||
+               (i.custom_fields?.contact_person || "").toLowerCase().includes(q);
+      })
+    : pcInstallations;
 
   // Location mismatch: compare branch of printer product vs linked PC product
   const linkedPc = pcInstallations.find((i) => i.id === linkedPcId);
@@ -185,6 +220,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
     const handleClick = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target))
         setShowSuggestions(false);
+      if (pcLinkRef.current && !pcLinkRef.current.contains(e.target))
+        setShowPcLinkList(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -239,6 +276,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
         av_validity:
           pcf.antivirus_validity || pcf.av_validity || "",
         av_activation: "",
+        department_name: pcf.department_name || "",
+        address:         pcf.address         || "",
         c1: "", c3: "", c4: "", c5: "", c7: "",
       });
     }
@@ -260,7 +299,7 @@ export default function InstallationModal({ show, onClose, products, branches, i
     setSnQuery("");
     if (isPC) setPcFields(EMPTY_PC);
     if (isPrinterType) setPrinterFields(EMPTY_PRINTER);
-    if (needsPcLink) setLinkedPcId("");
+    if (needsPcLink) { setLinkedPcId(""); setPcLinkQuery(""); setShowPcLinkList(false); }
   };
 
   const pc = (field, val) => setPcFields((prev) => ({ ...prev, [field]: val }));
@@ -295,6 +334,8 @@ export default function InstallationModal({ show, onClose, products, branches, i
     setPcFields(EMPTY_PC);
     setPrinterFields(EMPTY_PRINTER);
     setLinkedPcId("");
+    setPcLinkQuery("");
+    setShowPcLinkList(false);
     setSavedInstallation(null);
     setSelectedTemplate("brand");
     setShowScanner(false);
@@ -868,23 +909,58 @@ export default function InstallationModal({ show, onClose, products, branches, i
                     No PC installations found. Record a PC installation first.
                   </p>
                 ) : (
-                  <select
-                    value={linkedPcId}
-                    onChange={(e) => setLinkedPcId(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">— Select a PC installation —</option>
-                    {pcInstallations.map((inst) => {
-                      const sn   = inst.products?.serial_number || "";
-                      const name = inst.products?.name          || "Unknown";
-                      const dept = inst.custom_fields?.department_name || inst.customer_name || "";
-                      const user = inst.custom_fields?.contact_person  || "";
-                      const label = [sn && `SN: ${sn}`, name, dept, user].filter(Boolean).join(" — ");
-                      return (
-                        <option key={inst.id} value={inst.id}>{label}</option>
-                      );
-                    })}
-                  </select>
+                  <div className="relative" ref={pcLinkRef}>
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={pcLinkQuery}
+                      onChange={(e) => { setPcLinkQuery(e.target.value); setShowPcLinkList(true); if (linkedPcId) setLinkedPcId(""); }}
+                      onFocus={() => setShowPcLinkList(true)}
+                      placeholder="Search PC by serial, department, or user..."
+                      className={inputClass + " pl-10 pr-9"}
+                    />
+                    {(pcLinkQuery || linkedPcId) && (
+                      <button
+                        type="button"
+                        onClick={() => { setLinkedPcId(""); setPcLinkQuery(""); setShowPcLinkList(false); }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-gray-400 hover:text-[#E17055] hover:bg-gray-100 transition-colors"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                    {showPcLinkList && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E2E4F0] rounded-xl shadow-lg z-10 max-h-[220px] overflow-y-auto">
+                        {filteredPcInstallations.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-400">
+                            {pcLinkQuery.trim() ? "No PC matches" : "No PC installations available"}
+                          </div>
+                        ) : (
+                          filteredPcInstallations.map((inst) => (
+                            <button
+                              key={inst.id}
+                              type="button"
+                              onClick={() => { setLinkedPcId(inst.id); setPcLinkQuery(pcLabel(inst)); setShowPcLinkList(false); }}
+                              className={`w-full text-left px-4 py-2.5 hover:bg-[#F8F9FE] transition-colors border-b border-gray-50 last:border-0 ${linkedPcId === inst.id ? "bg-[#F0EDFF]" : ""}`}
+                            >
+                              <div className="text-[13px] font-medium text-[#2D3436]">
+                                {inst.products?.serial_number
+                                  ? <><span className="font-mono font-bold text-[#6C5CE7]">{inst.products.serial_number}</span> — {inst.products?.name || "Unknown"}</>
+                                  : (inst.products?.name || "Unknown")}
+                              </div>
+                              <div className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
+                                {(inst.custom_fields?.department_name || inst.customer_name) && (
+                                  <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold px-1.5 py-0.5 rounded">
+                                    {inst.custom_fields?.department_name || inst.customer_name}
+                                  </span>
+                                )}
+                                {inst.custom_fields?.contact_person && <span>{inst.custom_fields.contact_person}</span>}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {linkedPcId && (() => {
@@ -1064,17 +1140,16 @@ export default function InstallationModal({ show, onClose, products, branches, i
                       <select
                         className={inputClass}
                         value={pcFields.department_name}
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          const branch = (branches || []).find(b => b.name === name);
-                          pc("department_name", name);
-                          pc("address", branch?.address || "");
-                        }}
+                        onChange={(e) => pc("department_name", e.target.value)}
                       >
                         <option value="">— Select department —</option>
-                        {(branches && branches.length > 0 ? branches : []).map(b => (
-                          <option key={b.id} value={b.name}>{b.name}</option>
+                        {DEPARTMENTS.map((d) => (
+                          <option key={d} value={d}>{d}</option>
                         ))}
+                        {/* Keep any pre-filled department that isn't in the standard list */}
+                        {pcFields.department_name && !DEPARTMENTS.includes(pcFields.department_name) && (
+                          <option value={pcFields.department_name}>{pcFields.department_name}</option>
+                        )}
                       </select>
                     </div>
                     <div>

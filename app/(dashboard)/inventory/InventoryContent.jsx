@@ -227,12 +227,24 @@ export default function InventoryContent({ products, branches, installedProductI
   const normalizeCategory = (cat) => cat === "PhotoCopy" ? "Photocopier" : cat;
   const tabProducts = products.filter((p) => normalizeCategory(p.category) === activeTab);
 
+  // Processor matching: look at the processor custom field AND the specification/name,
+  // since many PCs store the tier in the name ("HP AIO ULTRA7", "HP AIO i5 …").
+  // Intel Core "Ultra 7" is treated as i7, "Ultra 5" as i5.
+  const matchesProcessor = (p, filter) => {
+    if (!filter) return true;
+    const cf = p.custom_fields || {};
+    const hay = `${cf.processor || ""} ${p.name || ""}`.toLowerCase();
+    if (filter === "i7") return /i7|ultra\s*-?\s*7/.test(hay);
+    if (filter === "i5") return /i5|ultra\s*-?\s*5/.test(hay);
+    return hay.includes(filter.toLowerCase());
+  };
+
   const filteredPCProducts = activeTab === "PC"
     ? tabProducts.filter((p) => {
         const cf = p.custom_fields || {};
         if (pcDeptFilter && cf.department_name !== pcDeptFilter) return false;
         if (pcSerialSearch && !(p.serial_number || "").toLowerCase().includes(pcSerialSearch.toLowerCase())) return false;
-        if (pcProcessorFilter && (cf.processor || "").toLowerCase() !== pcProcessorFilter.toLowerCase()) return false;
+        if (!matchesProcessor(p, pcProcessorFilter)) return false;
         return true;
       })
     : tabProducts;
